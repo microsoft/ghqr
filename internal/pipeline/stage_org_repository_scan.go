@@ -1,0 +1,100 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+package pipeline
+
+import (
+	"fmt"
+	"strings"
+	"sync"
+
+	"github.com/microsoft/ghqr/internal/scanners"
+	"github.com/rs/zerolog/log"
+)
+
+// OrgRepositoryScanStage scans repositories discovered by prior organization scans.
+// Repositories are fetched in batches (up to BatchSize per request) using aliased
+// GraphQL queries, and batches are processed concurrently up to Workers goroutines.
+type OrgRepositoryScanStage struct {
+	*BaseStage
+}
+
+// NewOrgRepositoryScanStage creates a new org-repository scan stage.
+func NewOrgRepositoryScanStage() *OrgRepositoryScanStage {
+	return &OrgRepositoryScanStage{
+		BaseStage: NewBaseStage("org_repository_scan"),
+	}
+}
+
+func (s *OrgRepositoryScanStage) Execute(ctx *ScanContext) error {
+	graphqlClient := scanners.NewGraphQLClient(ctx.GitHubGraphQLClient, ctx.GitHubRawHTTPClient)
+
+	workers := 2
+
+	for key := range ctx.Results {
+		if !strings.HasPrefix(key, "organization:") {
+			continue
+		}
+		org := strings.TrimPrefix(key, "organization:")
+		log.Info().Str("org", org).Msg("Fetching organization repository names via GraphQL")
+
+		names, err := graphqlClient.FetchOrgRepositoryNames(ctx.Ctx, org)
+		if err != nil {
+			log.Error().Err(err).Str("org", org).Msg("Failed to fetch org repository names")
+			continue
+		}
+
+		log.Info().
+			Str("org", org).
+			Int("count", len(names)).
+			Int("workers", workers).
+			Int("batch_size", scanners.BatchSize).
+			Msg("Scanning repositories in batches")
+
+		chunks := scanners.ChunkStrings(names, scanners.BatchSize)
+
+		var (
+			mu  sync.Mutex
+			wg  sync.WaitGroup
+			sem = make(chan struct{}, workers)
+		)
+
+		for _, chunk := range chunks {
+			wg.Add(1)
+			chunk := chunk // capture loop variable
+			sem <- struct{}{}
+			go func() {
+				defer wg.Done()
+				defer func() { <-sem }()
+
+				results, err := graphqlClient.FetchRepositoriesBatch(ctx.Ctx, org, chunk)
+				if err != nil {
+					log.Warn().Err(err).Str("org", org).Strs("repos", chunk).Msg("Batch fetch failed, skipping chunk")
+					return
+				}
+
+				mu.Lock()
+				for name, data := range results {
+					data.Organization = org
+					data.Enterprise = ctx.Ownership[fmt.Sprintf("organization:%s", org)]
+					ctx.Results[fmt.Sprintf("repository:%s/%s", org, name)] = data
+				}
+				mu.Unlock()
+			}()
+		}
+
+		wg.Wait()
+		log.Info().Str("org", org).Int("scanned", len(names)).Msg("Org repository scan complete")
+	}
+	return nil
+}
+
+func (s *OrgRepositoryScanStage) Skip(ctx *ScanContext) bool {
+	for key := range ctx.Results {
+		if strings.HasPrefix(key, "organization:") {
+			return false
+		}
+	}
+	log.Debug().Msg("Skipping org-repository scan - no organization results found")
+	return true
+}
