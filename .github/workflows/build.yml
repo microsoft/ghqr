@@ -1,0 +1,313 @@
+name: build
+
+on:
+  push:
+    branches:
+      - main
+      - release-*
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - release-*
+
+permissions: read-all
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Run tests
+        run: make test
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.txt
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+  calculate-version:
+    name: Calculate Version
+    runs-on: ubuntu-latest
+    needs: test
+    outputs:
+      version: ${{ steps.calculate_version.outputs.version }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Calculate Version
+        id: calculate_version
+        run: |
+          echo "version=$(git describe --tags)" >> $GITHUB_OUTPUT
+
+  build-linux:
+    name: Build Linux Binaries
+    runs-on: ubuntu-latest
+    needs: calculate-version
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Build Linux AMD64
+        run: make
+        env:
+          GOOS: linux
+          GOARCH: amd64
+          CGO_ENABLED: 0
+          PRODUCT_VERSION: ${{ needs.calculate-version.outputs.version }}
+
+      - name: Build Linux ARM64
+        run: make
+        env:
+          GOOS: linux
+          GOARCH: arm64
+          CGO_ENABLED: 0
+          PRODUCT_VERSION: ${{ needs.calculate-version.outputs.version }}
+
+      - name: Tarball Linux binaries
+        run: |
+          tar -czf linux-ghqr.tar.gz bin/linux_*
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: linux-binaries
+          path: linux-ghqr.tar.gz
+
+  build-windows:
+    name: Build Windows Binaries
+    runs-on: windows-latest
+    needs: calculate-version
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Build Windows AMD64
+        run: make
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: 0
+          PRODUCT_VERSION: ${{ needs.calculate-version.outputs.version }}
+
+      - name: Build Windows ARM64
+        run: make
+        env:
+          GOOS: windows
+          GOARCH: arm64
+          CGO_ENABLED: 0
+          PRODUCT_VERSION: ${{ needs.calculate-version.outputs.version }}
+
+      - name: Copy README and LICENSE
+        run: |
+          copy README.md bin\windows_amd64\README.md
+          copy LICENSE bin\windows_amd64\LICENSE
+          copy README.md bin\windows_arm64\README.md
+          copy LICENSE bin\windows_arm64\LICENSE
+
+      - name: Tarball Windows binaries
+        run: |
+          tar -czf windows-ghqr.tar.gz bin/windows_*
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: windows-binaries
+          path: windows-ghqr.tar.gz
+
+  build-macos:
+    name: Build macOS Binaries
+    runs-on: macos-latest
+    needs: calculate-version
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Build macOS AMD64
+        run: make
+        env:
+          GOOS: darwin
+          GOARCH: amd64
+          CGO_ENABLED: 0
+          PRODUCT_VERSION: ${{ needs.calculate-version.outputs.version }}
+
+      - name: Build macOS ARM64
+        run: make
+        env:
+          GOOS: darwin
+          GOARCH: arm64
+          CGO_ENABLED: 0
+          PRODUCT_VERSION: ${{ needs.calculate-version.outputs.version }}
+
+      - name: Tarball macOS binaries
+        run: |
+          tar -czf macos-ghqr.tar.gz bin/darwin_*
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: macos-binaries
+          path: macos-ghqr.tar.gz
+
+  release:
+    name: Create Release
+    needs: [calculate-version, build-linux, build-windows, build-macos]
+    if: github.event_name != 'pull_request' && startswith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      release_id: ${{ steps.create_release.outputs.id }}
+    steps:
+      - name: Detect preview version
+        id: detect_preview
+        run: |
+          VERSION="${{ needs.calculate-version.outputs.version }}"
+          if [[ $VERSION =~ (preview|alpha|beta|rc|dev) ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create ghqr Release
+        id: create_release
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          name: ${{ needs.calculate-version.outputs.version }}
+          body: ""
+          draft: false
+          prerelease: ${{ steps.detect_preview.outputs.is_prerelease }}
+
+  publish:
+    name: Publish binaries
+    needs: [release]
+    permissions:
+      contents: write
+    if: github.event_name != 'pull_request' && startswith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          path: bin
+
+      - name: Untar binaries
+        run: |
+          tar -xzf bin/linux-binaries/linux-ghqr.tar.gz
+          tar -xzf bin/macos-binaries/macos-ghqr.tar.gz
+          tar -xzf bin/windows-binaries/windows-ghqr.tar.gz
+
+      - name: Move binaries to correct locations
+        run: |
+          mkdir -p bin/linux_amd64 bin/linux_arm64 \
+                   bin/darwin_amd64 bin/darwin_arm64 \
+                   bin/windows_amd64 bin/windows_arm64
+          rm -rf bin/linux-binaries bin/macos-binaries bin/windows-binaries
+
+      - name: Zip
+        uses: montudor/action-zip@a8e75c9faefcd80fac3baf53ef40b9b119d5b702 # v1
+        with:
+          args: zip -qq -r ghqr.zip bin
+
+      - name: Zip (win-amd64)
+        uses: montudor/action-zip@a8e75c9faefcd80fac3baf53ef40b9b119d5b702 # v1
+        with:
+          args: zip -qq ghqr-win-amd64.zip bin/windows_amd64/ghqr.exe bin/windows_amd64/README.md bin/windows_amd64/LICENSE
+
+      - name: Zip (win-arm64)
+        uses: montudor/action-zip@a8e75c9faefcd80fac3baf53ef40b9b119d5b702 # v1
+        with:
+          args: zip -qq ghqr-win-arm64.zip bin/windows_arm64/ghqr.exe bin/windows_arm64/README.md bin/windows_arm64/LICENSE
+
+      - name: Zip (darwin-amd64)
+        uses: montudor/action-zip@a8e75c9faefcd80fac3baf53ef40b9b119d5b702 # v1
+        with:
+          args: zip -qq ghqr-darwin-amd64.zip bin/darwin_amd64/ghqr
+
+      - name: Zip (darwin-arm64)
+        uses: montudor/action-zip@a8e75c9faefcd80fac3baf53ef40b9b119d5b702 # v1
+        with:
+          args: zip -qq ghqr-darwin-arm64.zip bin/darwin_arm64/ghqr
+
+      - name: Zip (linux-amd64)
+        uses: montudor/action-zip@a8e75c9faefcd80fac3baf53ef40b9b119d5b702 # v1
+        with:
+          args: zip -qq ghqr-linux-amd64.zip bin/linux_amd64/ghqr
+
+      - name: Zip (linux-arm64)
+        uses: montudor/action-zip@a8e75c9faefcd80fac3baf53ef40b9b119d5b702 # v1
+        with:
+          args: zip -qq ghqr-linux-arm64.zip bin/linux_arm64/ghqr
+
+      - name: Create sha256 Checksums
+        run: |
+          sha256sum ghqr.zip > ghqr.zip.sha256
+          sha256sum ghqr-win-amd64.zip > ghqr-win-amd64.zip.sha256
+          sha256sum ghqr-win-arm64.zip > ghqr-win-arm64.zip.sha256
+          sha256sum ghqr-darwin-amd64.zip > ghqr-darwin-amd64.zip.sha256
+          sha256sum ghqr-darwin-arm64.zip > ghqr-darwin-arm64.zip.sha256
+          sha256sum ghqr-linux-amd64.zip > ghqr-linux-amd64.zip.sha256
+          sha256sum ghqr-linux-arm64.zip > ghqr-linux-arm64.zip.sha256
+
+      - name: Publish
+        uses: skx/github-action-publish-binaries@44887b225ceca96efd8a912d39c09ad70312af31 # master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: ghqr.zip ghqr-win-amd64.zip ghqr-win-arm64.zip ghqr-darwin-amd64.zip ghqr-darwin-arm64.zip ghqr-linux-amd64.zip ghqr-linux-arm64.zip ghqr.zip.sha256 ghqr-win-amd64.zip.sha256 ghqr-win-arm64.zip.sha256 ghqr-darwin-amd64.zip.sha256 ghqr-darwin-arm64.zip.sha256 ghqr-linux-amd64.zip.sha256 ghqr-linux-arm64.zip.sha256
+          releaseId: ${{ needs.release.outputs.release_id }}

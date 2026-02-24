@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: ghqr Repo
+    url: https://github.com/microsoft/ghqr
+    about: Please see our community docs here.
