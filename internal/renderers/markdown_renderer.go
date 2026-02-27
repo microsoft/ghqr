@@ -12,6 +12,15 @@ import (
 	"time"
 )
 
+// titleCase capitalises only the first letter of s.
+// It replaces the deprecated strings.Title for simple ASCII inputs.
+func titleCase(s string) string {
+	if s == "" {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
+}
+
 // categoryDisplayNames maps raw category keys to human-readable titles.
 var categoryDisplayNames = map[string]string{
 	"security":           "Security — Vulnerability Management",
@@ -428,7 +437,7 @@ func generateRiskDistribution(counts map[string]int, total int) string {
 		}
 		emoji := severityEmoji[sev]
 		sb.WriteString(fmt.Sprintf("| %s %s | %d | %.0f%% |\n",
-			emoji, strings.Title(sev), count, pct))
+			emoji, titleCase(sev), count, pct))
 	}
 
 	return sb.String()
@@ -502,7 +511,7 @@ func generateFindingsByCategory(allFindings []entityFindings) string {
 		sort.Strings(entities)
 
 		sb.WriteString(fmt.Sprintf("### %s\n\n", displayName))
-		sb.WriteString(fmt.Sprintf("**Risk Level:** %s %s\n", severityEmoji[highestSev], strings.Title(highestSev)))
+		sb.WriteString(fmt.Sprintf("**Risk Level:** %s %s\n", severityEmoji[highestSev], titleCase(highestSev)))
 		sb.WriteString(fmt.Sprintf("**Affected Entities:** %s\n\n", strings.Join(entities, ", ")))
 
 		sb.WriteString("#### Findings\n\n")
@@ -520,7 +529,7 @@ func generateFindingsByCategory(allFindings []entityFindings) string {
 				learnMore = fmt.Sprintf("[Docs](%s)", f.Rec.LearnMore)
 			}
 			sb.WriteString(fmt.Sprintf("| %s %s | %s | %s | %s | %s |\n",
-				severityEmoji[f.Rec.Severity], strings.Title(f.Rec.Severity),
+				severityEmoji[f.Rec.Severity], titleCase(f.Rec.Severity),
 				f.Entity, f.Rec.Issue, f.Rec.Recommendation, learnMore,
 			))
 		}
@@ -795,7 +804,7 @@ func generateAppendix(report *ScanReport) string {
 				learnMore = fmt.Sprintf("[Link](%s)", r.LearnMore)
 			}
 			sb.WriteString(fmt.Sprintf("| %s %s | %s | %s | %s | %s |\n",
-				severityEmoji[r.Severity], strings.Title(r.Severity),
+				severityEmoji[r.Severity], titleCase(r.Severity),
 				displayCat, r.Issue, r.Recommendation, learnMore,
 			))
 		}
