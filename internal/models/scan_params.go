@@ -9,5 +9,6 @@ type ScanParams struct {
 	Repositories  []string
 	OutputName    string
 	Debug         bool
-	Xlsx bool
+	Xlsx          bool
+	Markdown      bool
 }

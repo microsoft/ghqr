@@ -42,6 +42,15 @@ func (s *ReportRenderingStage) Execute(ctx *ScanContext) error {
 		excel.CreateExcelReport(ctx.Results, ctx.OutputName)
 	}
 
+	if ctx.Params.Markdown {
+		mdPath, err := renderers.RenderMarkdown(ctx.Results, ctx.OutputName)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to render Markdown report")
+		} else {
+			log.Info().Str("path", mdPath).Msg("Markdown report written")
+		}
+	}
+
 	s.printSummary(ctx)
 	return nil
 }
