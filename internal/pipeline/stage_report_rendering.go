@@ -6,8 +6,9 @@ package pipeline
 import (
 	"strings"
 
-	"github.com/microsoft/ghqr/internal/renderers"
+	renderjson "github.com/microsoft/ghqr/internal/renderers"
 	"github.com/microsoft/ghqr/internal/renderers/excel"
+	"github.com/microsoft/ghqr/internal/renderers/markdown"
 	"github.com/rs/zerolog/log"
 )
 
@@ -31,7 +32,7 @@ func (s *ReportRenderingStage) Execute(ctx *ScanContext) error {
 
 	log.Info().Int("results", len(ctx.Results)).Msg("Rendering reports...")
 
-	jsonPath, err := renderers.RenderJSON(ctx.Results, ctx.OutputName)
+	jsonPath, err := renderjson.RenderJSON(ctx.Results, ctx.OutputName)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to render JSON report")
 	} else {
@@ -43,7 +44,7 @@ func (s *ReportRenderingStage) Execute(ctx *ScanContext) error {
 	}
 
 	if ctx.Params.Markdown {
-		mdPath, err := renderers.RenderMarkdown(ctx.Results, ctx.OutputName)
+		mdPath, err := markdown.RenderMarkdown(ctx.Results, ctx.OutputName)
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to render Markdown report")
 		} else {

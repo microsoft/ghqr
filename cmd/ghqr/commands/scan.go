@@ -17,7 +17,7 @@ func init() {
 	scanCmd.PersistentFlags().StringArrayP("repository", "r", []string{}, "GitHub Repository (owner/repo)")
 	scanCmd.PersistentFlags().StringP("output-name", "n", "", "Output file name without extension")
 	scanCmd.PersistentFlags().Bool("xlsx", true, "Create Excel (.xlsx) report")
-	scanCmd.PersistentFlags().Bool("markdown", false, "Create Markdown (.md) executive report")
+	scanCmd.PersistentFlags().Bool("markdown", true, "Create Markdown (.md) executive report")
 
 	rootCmd.AddCommand(scanCmd)
 }
