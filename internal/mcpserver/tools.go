@@ -52,6 +52,8 @@ The scan produces comprehensive data that can be used to generate:
 			mcp.Items(map[string]any{"type": "string"}),
 			mcp.Description("Optional array of repositories to scan in 'owner/repo' format. Use for targeted repository analysis."),
 		),
+		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithDestructiveHintAnnotation(false),
 	)
 
 	s.AddTool(scan, mcp.NewTypedToolHandler(scanHandler))

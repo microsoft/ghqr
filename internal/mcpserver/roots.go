@@ -8,68 +8,56 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
-// fileURIToPath converts a file:// URI to an OS filesystem path.
-// e.g. "file:///home/user/dir" -> "/home/user/dir" (Linux)
-// e.g. "file:///C:/Users/dir"  -> "C:\Users\dir"  (Windows)
-func fileURIToPath(uri string) (string, error) {
-	parsed, err := url.Parse(uri)
+// fileURIToPath converts a file:// URI to a local filesystem path.
+// It handles both Unix paths (file:///home/user) and Windows paths
+// (file:///C:/Users, file:///c%3A/Users), decoding percent-encoded characters.
+func fileURIToPath(uri string) string {
+	if !strings.HasPrefix(uri, "file://") {
+		return uri
+	}
+
+	u, err := url.Parse(uri)
 	if err != nil {
-		return "", fmt.Errorf("invalid file URI %q: %w", uri, err)
+		// Fallback: strip "file://" and hope for the best
+		return strings.TrimPrefix(uri, "file://")
 	}
-	p := parsed.Path
-	// On Windows, url.Parse("file:///C:/path") gives Path="/C:/path".
-	// Strip the leading slash before the drive letter.
-	if runtime.GOOS == "windows" && len(p) >= 3 && p[0] == '/' && p[2] == ':' {
-		p = p[1:]
+
+	// url.Parse decodes percent-encoded characters (e.g. %3A → :) in u.Path.
+	path := u.Path
+
+	// On Windows, MCP clients emit file:///C:/... so the parsed path is /C:/...
+	// Strip the leading "/" before a Windows drive letter to get a valid path.
+	if len(path) >= 3 && path[0] == '/' && isASCIILetter(path[1]) && path[2] == ':' {
+		path = path[1:]
 	}
-	return filepath.FromSlash(p), nil
+
+	return path
 }
 
-// pathToFileURI converts an OS filesystem path to a file:// URI.
-// e.g. "/home/user/file.json"    -> "file:///home/user/file.json" (Linux)
-// e.g. "C:\Users\file.json"      -> "file:///C:/Users/file.json"  (Windows)
-func pathToFileURI(p string) string {
-	p = filepath.ToSlash(p)
-	if !strings.HasPrefix(p, "/") {
-		// Windows absolute path like "C:/Users/..." needs a leading slash
-		p = "/" + p
-	}
-	return "file://" + p
+// isASCIILetter reports whether b is an ASCII letter (a–z or A–Z).
+func isASCIILetter(b byte) bool {
+	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z')
 }
 
-func currentWorkspace(ctx context.Context) string {
-	result, err := s.RequestRoots(ctx, mcp.ListRootsRequest{})
-	if err == nil {
+// getCurrentFolder returns the first file:// root reported by the MCP client,
+// or falls back to the process working directory.
+func getCurrentFolder(ctx context.Context) (string, error) {
+	if result, err := s.RequestRoots(ctx, mcp.ListRootsRequest{}); err == nil {
 		for _, root := range result.Roots {
-			uri := root.URI
-			if strings.HasPrefix(uri, "file://") {
-				path, err := fileURIToPath(uri)
-				if err != nil {
-					continue
-				}
-				return path
+			if strings.HasPrefix(root.URI, "file://") {
+				return fileURIToPath(root.URI), nil
 			}
 		}
 	}
 
-	return ""
-}
-
-func getCurrentFolder(ctx context.Context) (string, error) {
-	if currentDir := currentWorkspace(ctx); currentDir != "" {
-		return currentDir, nil
-	}
-
-	currentDir, err := os.Getwd()
+	dir, err := os.Getwd()
 	if err != nil {
 		return "", fmt.Errorf("failed to get current working directory: %w", err)
 	}
-	return currentDir, nil
+	return dir, nil
 }

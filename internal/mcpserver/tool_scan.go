@@ -6,6 +6,7 @@ package mcpserver
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -37,7 +38,6 @@ func scanHandler(ctx context.Context, request mcp.CallToolRequest, args ScanArgs
 		Organizations: args.Organizations,
 		Repositories:  args.Repositories,
 		OutputName:    outputName,
-		Debug:         false,
 	}
 
 	log.Debug().
@@ -53,18 +53,33 @@ func scanHandler(ctx context.Context, request mcp.CallToolRequest, args ScanArgs
 		return nil, fmt.Errorf("scan failed: %w", err)
 	}
 
-	jsonURI := pathToFileURI(output + ".json")
-
+	jsonPath := output + ".json"
+	jsonURI := fileURIToPath(jsonPath)
 	registerScanResources(output, "GitHub Quick Review Scan Results", jsonURI)
 
-	// Build structured result
+	// Build the base result; status is set after we confirm the file was written.
 	result := map[string]interface{}{
-		"status":        "completed",
 		"outputPath":    output,
 		"enterprises":   args.Enterprises,
 		"organizations": args.Organizations,
 		"repositories":  args.Repositories,
 	}
 
-	return mcp.NewToolResultStructured(result, fmt.Sprintf("Scan completed successfully. Results saved to:\n%s", jsonURI)), nil
+	// Read the report back to return findings inline. A read failure means the
+	// write never succeeded; surface that rather than silently reporting "completed".
+	jsonBytes, readErr := os.ReadFile(jsonPath)
+	if readErr != nil {
+		log.Error().Err(readErr).Str("path", jsonPath).Msg("Failed to read JSON report after scan")
+		result["status"] = "error"
+		result["error"] = fmt.Sprintf("report file could not be read: %s", readErr.Error())
+		return mcp.NewToolResultStructured(
+			result,
+			fmt.Sprintf("Scan failed: report file was not written to %s\nError: %s", jsonPath, readErr.Error()),
+		), nil
+	}
+
+	result["status"] = "completed"
+	toolResult := mcp.NewToolResultStructured(result, fmt.Sprintf("Scan completed successfully. Results saved to:\n%s", jsonURI))
+	toolResult.Content = append(toolResult.Content, mcp.NewTextContent(string(jsonBytes)))
+	return toolResult, nil
 }
