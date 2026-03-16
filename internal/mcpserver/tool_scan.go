@@ -48,7 +48,7 @@ func scanHandler(ctx context.Context, request mcp.CallToolRequest, args ScanArgs
 		Msg("Starting GitHub scan")
 
 	output := (&pipeline.Scanner{}).Scan(&params)
-	jsonURI := fmt.Sprintf("file://%s.json", output)
+	jsonURI := pathToFileURI(output + ".json")
 
 	registerScanResources(output, "GitHub Quick Review Scan Results", jsonURI)
 
