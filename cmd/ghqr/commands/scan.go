@@ -63,7 +63,9 @@ func scan(cmd *cobra.Command) {
 	}
 
 	scanner := pipeline.Scanner{}
-	_ = scanner.Scan(&params)
+	if _, err := scanner.Scan(&params); err != nil {
+		log.Fatal().Err(err).Msg("Scan failed")
+	}
 
 	log.Info().Msg("Scan completed")
 }

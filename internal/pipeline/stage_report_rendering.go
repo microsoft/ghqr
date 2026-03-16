@@ -4,6 +4,7 @@
 package pipeline
 
 import (
+	"fmt"
 	"strings"
 
 	renderjson "github.com/microsoft/ghqr/internal/renderers"
@@ -34,10 +35,9 @@ func (s *ReportRenderingStage) Execute(ctx *ScanContext) error {
 
 	jsonPath, err := renderjson.RenderJSON(ctx.Results, ctx.OutputName)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to render JSON report")
-	} else {
-		log.Info().Str("path", jsonPath).Msg("JSON report written")
+		return fmt.Errorf("failed to render JSON report: %w", err)
 	}
+	log.Info().Str("path", jsonPath).Msg("JSON report written")
 
 	if ctx.Params.Xlsx {
 		excel.CreateExcelReport(ctx.Results, ctx.OutputName)
