@@ -7,6 +7,7 @@ type ScanParams struct {
 	Enterprises   []string
 	Organizations []string
 	Repositories  []string
+	GHESInstances []string
 	OutputName    string
 	Debug         bool
 	Xlsx          bool

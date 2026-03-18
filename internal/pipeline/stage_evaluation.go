@@ -129,6 +129,36 @@ func (s *EvaluationStage) Execute(ctx *ScanContext) error {
 
 			// Repository metadata: description, topics, dormancy (G3, R8)
 			ctx.Results["evaluation:metadata:"+repoName] = s.eval.EvaluateRepositoryMetadata(repo)
+
+		case strings.HasPrefix(key, "ghes:"):
+			ghes := toType[scanners.GHESData](data)
+			if ghes == nil {
+				continue
+			}
+			hostname := strings.TrimPrefix(key, "ghes:")
+
+			// Combined GHES instance evaluation
+			ctx.Results["evaluation:ghes:"+hostname] = s.eval.EvaluateGHESInstance(ghes)
+
+			// Individual sub-evaluations for granular reporting
+			if ghes.ServerInfo != nil {
+				ctx.Results["evaluation:ghes_server:"+hostname] = s.eval.EvaluateGHESServerInfo(ghes.ServerInfo)
+			}
+			if ghes.License != nil {
+				ctx.Results["evaluation:ghes_license:"+hostname] = s.eval.EvaluateGHESLicense(ghes.License)
+			}
+			if ghes.Settings != nil {
+				ctx.Results["evaluation:ghes_settings:"+hostname] = s.eval.EvaluateGHESSettings(ghes.Settings)
+			}
+			if ghes.AdminStats != nil {
+				ctx.Results["evaluation:ghes_stats:"+hostname] = s.eval.EvaluateGHESAdminStats(ghes.AdminStats)
+			}
+			if ghes.SecurityAlerts != nil {
+				ctx.Results["evaluation:ghes_security_alerts:"+hostname] = s.eval.EvaluateGHESSecurityAlerts(ghes.SecurityAlerts)
+			}
+			if ghes.AuditLog != nil {
+				ctx.Results["evaluation:ghes_audit_log:"+hostname] = s.eval.EvaluateGHESAuditLog(ghes.AuditLog)
+			}
 		}
 	}
 

@@ -68,6 +68,11 @@ func (b *ScanPipelineBuilder) WithEvaluation() *ScanPipelineBuilder {
 	return b.addStage(NewEvaluationStage())
 }
 
+// WithGHESScan adds the GitHub Enterprise Server scanning stage.
+func (b *ScanPipelineBuilder) WithGHESScan() *ScanPipelineBuilder {
+	return b.addStage(NewGHESScanStage())
+}
+
 // Build creates the pipeline with all configured stages.
 func (b *ScanPipelineBuilder) Build() *Pipeline {
 	return NewPipeline(b.stages...)
@@ -77,6 +82,7 @@ func (b *ScanPipelineBuilder) Build() *Pipeline {
 func (b *ScanPipelineBuilder) BuildDefault() *Pipeline {
 	return b.
 		WithInitialization().
+		WithGHESScan().
 		WithEnterpriseDiscovery().
 		WithEnterpriseScan().
 		WithOrganizationDiscovery().

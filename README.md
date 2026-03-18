@@ -10,6 +10,8 @@
 
 **GitHub Quick Review (ghqr)** evaluates your GitHub resources across the following areas:
 
+### GitHub Enterprise Cloud / Organizations / Repositories
+
 | Area | Scope | Examples |
 |------|-------|---------|
 | **Security** | Org, Repo | Dependabot alerts, secret scanning, code scanning, GHAS |
@@ -17,11 +19,25 @@
 | **Branch Protection** | Repo | Required reviews, status checks, admin enforcement |
 | **Copilot** | Org | Seat usage, content exclusions, policy configuration, MCP settings |
 | **Governance** | Org | IP allow lists, repository creation policies, fork policies |
-| **Audit Log** | Enterprise, Org | Audit log streaming configuration |
+| **Audit Log** | Enterprise, Org | Audit log streaming, suspicious event detection |
 | **Community** | Repo | Contributing guide, issue templates, code of conduct |
 | **Actions** | Org, Repo | Workflow permissions, allowed actions, self-hosted runners |
 | **Dependencies** | Repo | Dependabot version updates, security updates |
 | **Metadata** | Repo | Description, topics, visibility, archival status |
+
+### GitHub Enterprise Server (GHES)
+
+| Area | Examples |
+|------|---------|
+| **Server Configuration** | Version currency, subdomain isolation, TLS, private mode |
+| **Authentication** | Auth mode (SAML/LDAP/CAS), open signup, password authentication |
+| **License** | Seat utilization, license expiration warnings |
+| **Security** | GHAS enablement, secret scanning, push protection, code scanning |
+| **Dependencies** | Dependabot alerts and security updates enablement |
+| **Actions** | GitHub Actions enablement, self-hosted runner security |
+| **Audit Log** | Suspicious event detection, log forwarding, staff impersonation |
+| **Infrastructure** | Admin SSH access, site admin count, backup-utils, HA replicas |
+| **Admin Stats** | User/org/repo counts, suspended user ratio, disabled orgs |
 
 ## Scan Results
 
@@ -75,8 +91,12 @@ export GITHUB_TOKEN=<your-personal-access-token>
 # 2. Scan an organization
 ghqr scan -o my-org
 
-# 3. Scan a GitHub Enterprise
+# 3. Scan a GitHub Enterprise (Cloud)
 ghqr scan -e my-enterprise
+
+# 4. Scan a GitHub Enterprise Server (GHES) instance
+export GHES_TOKEN=<your-ghes-personal-access-token>
+ghqr scan --ghes ghes.example.com
 ```
 
 ## Usage
@@ -87,7 +107,7 @@ ghqr scan -e my-enterprise
 
 - **Personal Access Token (PAT)**: Set the `GITHUB_TOKEN` environment variable
 
-#### Required Token Scopes
+#### Required Token Scopes (GitHub.com)
 
 | Scope | Purpose |
 |-------|---------|
@@ -98,14 +118,92 @@ ghqr scan -e my-enterprise
 | `read:user` | Read user information |
 | `copilot` | Read Copilot seat and policy information |
 
+#### Required Token Scopes (GHES)
+
+For GitHub Enterprise Server scanning, create a PAT on your GHES instance with these scopes:
+
+| Scope | Purpose |
+|-------|---------|
+| `site_admin` | Read server settings, license, admin stats, and audit log |
+| `read:org` | Read organization settings and members |
+| `repo` | Read repository settings and security features |
+| `read:audit_log` | Read audit log events |
+
 ### Running Scans
 
 ```bash
 # Scan a single organization
-ghqr scan
+ghqr scan -o my-org
+
+# Scan a GitHub Enterprise (Cloud)
+ghqr scan -e my-enterprise
 ```
 
 Run `ghqr -h` for all available commands and options.
+
+### Scanning GitHub Enterprise Server (GHES)
+
+ghqr supports scanning on-premise GitHub Enterprise Server instances to assess security posture, configuration best practices, and compliance.
+
+#### Setup
+
+1. **Set your GHES token** — Create a Personal Access Token on your GHES instance with `site_admin` scope:
+
+   ```bash
+   export GHES_TOKEN=<your-ghes-personal-access-token>
+   ```
+
+   > If `GHES_TOKEN` is not set, ghqr falls back to `GH_TOKEN` or `GITHUB_TOKEN`.
+
+2. **Run a GHES scan** — Pass the GHES hostname (without protocol) via the `--ghes` flag:
+
+   ```bash
+   # Scan a single GHES instance
+   ghqr scan --ghes ghes.example.com
+
+   # Scan multiple GHES instances
+   ghqr scan --ghes ghes1.example.com --ghes ghes2.example.com
+
+   # Combine GHES scan with GitHub.com enterprise scan
+   ghqr scan -e my-enterprise --ghes ghes.example.com
+
+   # Scan with custom output name
+   ghqr scan --ghes ghes.example.com -n my-ghes-audit-2026
+   ```
+
+#### What GHES Scan Checks
+
+| Category | Checks |
+|----------|--------|
+| **Server Version** | Installed version detection, supported release verification |
+| **Authentication** | Auth mode (built-in/SAML/LDAP/CAS), open signup, password auth |
+| **Networking** | Subdomain isolation (critical), private mode, TLS enforcement |
+| **License** | Seat utilization, expiration warnings (30/90 days) |
+| **Advanced Security** | GHAS enablement, secret scanning, push protection, code scanning |
+| **Dependencies** | Dependabot alerts and security updates enablement |
+| **Actions** | GitHub Actions enablement, self-hosted runner security guidance |
+| **Audit Log** | Suspicious event detection, log forwarding recommendations |
+| **Infrastructure** | Site admin count, backup-utils verification, HA replica checks |
+| **Admin Stats** | User/org/repo counts, suspended user ratio, disabled orgs |
+
+#### GHES-Specific Suspicious Audit Events
+
+The GHES audit log scanner detects these additional server-specific events:
+
+- `staff.fake_login` — Admin impersonation of another user
+- `staff.unlock` — Admin unlock of a user account
+- `staff.set_site_admin` — Admin privilege escalation
+- `user.suspend` / `user.unsuspend` — User account state changes
+
+These are in addition to the standard events (`repo.destroy`, `org.remove_member`, etc.).
+
+#### Manual Verification Items
+
+Some GHES configuration items cannot be verified automatically via the API. The scan report will flag these for manual review:
+
+- **Audit log forwarding (syslog)** — Verify in Site Admin → Monitoring → Log forwarding
+- **Backup configuration** — Verify GitHub Enterprise Server Backup Utilities (backup-utils) are configured and tested
+- **High Availability (HA)** — Verify replica configuration if HA is required for your deployment
 
 ### MCP Server (Model Context Protocol)
 
@@ -145,6 +243,7 @@ Add to your `.vscode/mcp.json`:
 | `scan_organization` | Scan a GitHub organization for best practices |
 | `scan_repository` | Scan a specific repository |
 | `scan_enterprise` | Scan a GitHub Enterprise |
+| `scan_ghes` | Scan a GitHub Enterprise Server instance |
 
 ## Troubleshooting
 
@@ -161,8 +260,18 @@ ghqr scan -o my-org --debug
 If you receive `401 Unauthorized` or `403 Forbidden` errors:
 
 1. Verify your `GITHUB_TOKEN` is set and valid
-2. Check that your token has the required scopes (see [Required Token Scopes](#required-token-scopes))
+2. Check that your token has the required scopes (see [Required Token Scopes](#required-token-scopes-githubcom))
 3. For enterprise resources, ensure your token has `read:enterprise` scope and that SSO is authorized for the enterprise
+
+### GHES Connection Errors
+
+If ghqr cannot connect to your GHES instance:
+
+1. Verify `GHES_TOKEN` is set and was created on the GHES instance (not on github.com)
+2. Ensure the hostname is correct and reachable from your network (e.g. `ghes.example.com`)
+3. The token must have `site_admin` scope for full scanning capabilities
+4. If some checks show "not available", the token may lack sufficient permissions — re-create with `site_admin` scope
+5. GHES instances behind a VPN or firewall require network access from the machine running ghqr
 
 ### Rate Limiting
 

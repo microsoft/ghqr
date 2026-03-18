@@ -57,7 +57,7 @@ func (s *ReportRenderingStage) Execute(ctx *ScanContext) error {
 }
 
 func (s *ReportRenderingStage) printSummary(ctx *ScanContext) {
-	var enterprises, orgs, repos int
+	var enterprises, orgs, repos, ghesInstances int
 	for key := range ctx.Results {
 		switch {
 		case strings.HasPrefix(key, "enterprise:"):
@@ -66,6 +66,8 @@ func (s *ReportRenderingStage) printSummary(ctx *ScanContext) {
 			orgs++
 		case strings.HasPrefix(key, "repository:"):
 			repos++
+		case strings.HasPrefix(key, "ghes:"):
+			ghesInstances++
 		}
 	}
 
@@ -73,6 +75,7 @@ func (s *ReportRenderingStage) printSummary(ctx *ScanContext) {
 		Int("enterprises", enterprises).
 		Int("organizations", orgs).
 		Int("repositories", repos).
+		Int("ghes_instances", ghesInstances).
 		Str("output", ctx.OutputName).
 		Msg("Scan summary")
 }

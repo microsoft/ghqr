@@ -15,6 +15,7 @@ func init() {
 	scanCmd.PersistentFlags().StringArrayP("enterprise", "e", []string{}, "GitHub Enterprise(s) to scan (can be specified multiple times)")
 	scanCmd.PersistentFlags().StringArrayP("organization", "o", []string{}, "GitHub Organization(s) to scan (can be specified multiple times)")
 	scanCmd.PersistentFlags().StringArrayP("repository", "r", []string{}, "GitHub Repository (owner/repo)")
+	scanCmd.PersistentFlags().StringArrayP("ghes", "", []string{}, "GitHub Enterprise Server hostname(s) to scan (e.g. ghes.example.com)")
 	scanCmd.PersistentFlags().StringP("output-name", "n", "", "Output file name without extension")
 	scanCmd.PersistentFlags().Bool("xlsx", true, "Create Excel (.xlsx) report")
 	scanCmd.PersistentFlags().Bool("markdown", true, "Create Markdown (.md) executive report")
@@ -40,6 +41,12 @@ Examples:
   # Scan enterprise and specific organizations
   ghqr scan -e my-enterprise -o org1 -o org2
 
+  # Scan a GitHub Enterprise Server instance
+  ghqr scan --ghes ghes.example.com
+
+  # Scan multiple GHES instances
+  ghqr scan --ghes ghes1.example.com --ghes ghes2.example.com
+
   # Scan with custom output name
   ghqr scan -e my-enterprise -n my-audit-2024
 
@@ -56,6 +63,7 @@ func scan(cmd *cobra.Command) {
 		Enterprises:   getStringArray(cmd, "enterprise"),
 		Organizations: getStringArray(cmd, "organization"),
 		Repositories:  getStringArray(cmd, "repository"),
+		GHESInstances: getStringArray(cmd, "ghes"),
 		OutputName:    getString(cmd, "output-name"),
 		Debug:         getBool(cmd, "debug"),
 		Xlsx:          getBool(cmd, "xlsx"),
