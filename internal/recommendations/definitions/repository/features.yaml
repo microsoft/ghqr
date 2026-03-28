@@ -1,0 +1,21 @@
+- id: repo-feat-001
+  scope: repository
+  title: Issues and Discussions both disabled
+  category: features
+  severity: low
+  description: Both GitHub Issues and GitHub Discussions are disabled for this repository, leaving contributors with no built-in channel for feedback, bug reports, or questions.
+  recommendation: Consider enabling Issues or Discussions to provide a structured channel for community feedback and bug reports.
+  learnMore: https://docs.github.com/en/discussions/quickstart
+  tags: [features, community]
+  enabled: true
+
+- id: repo-feat-002
+  scope: repository
+  title: Auto-delete branches on merge not enabled
+  category: maintenance
+  severity: low
+  description: Branches are not automatically deleted after a pull request is merged. This leads to accumulation of stale branches over time.
+  recommendation: Enable auto-delete branch after merge in repository settings to keep the repository clean.
+  learnMore: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-the-automatic-deletion-of-branches
+  tags: [maintenance, hygiene]
+  enabled: true

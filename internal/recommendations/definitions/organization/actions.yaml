@@ -1,0 +1,32 @@
+- id: org-act-001
+  scope: organization
+  title: Default GITHUB_TOKEN permission is write
+  category: actions
+  severity: high
+  description: The default permission for the GITHUB_TOKEN in GitHub Actions workflows is set to 'write'. This grants all workflows write access to repository contents, packages, and other resources unless explicitly restricted, violating the principle of least privilege.
+  recommendation: Change the default workflow permission to 'read' in Organization → Settings → Actions → Workflow permissions. Grant write access only in individual workflows that explicitly require it.
+  learnMore: https://docs.github.com/en/actions/security-guides/automatic-token-authentication#modifying-the-permissions-for-the-github_token
+  tags: [actions, security, permissions]
+  enabled: true
+
+- id: org-act-002
+  scope: organization
+  title: GitHub Actions allows all third-party actions
+  category: actions
+  severity: high
+  description: GitHub Actions is configured to allow any third-party action from any source without restriction. This exposes all workflows to supply-chain attacks from malicious or compromised action repositories.
+  recommendation: Restrict allowed actions to 'local_only' or 'selected' (trusted publishers and verified creators) to reduce supply-chain risk.
+  learnMore: https://docs.github.com/en/organizations/managing-organization-settings/disabling-or-limiting-github-actions-for-your-organization
+  tags: [actions, security, supply_chain]
+  enabled: true
+
+- id: org-act-003
+  scope: organization
+  title: Actions restricted to local repositories only
+  category: actions
+  severity: low
+  description: GitHub Actions is restricted to local/internal repositories only. While this is more secure than 'all', it may block useful verified third-party actions (e.g. actions/checkout).
+  recommendation: Consider using 'selected' to allow specific trusted third-party actions from verified creators, which provides a good balance of security and flexibility.
+  learnMore: https://docs.github.com/en/organizations/managing-organization-settings/disabling-or-limiting-github-actions-for-your-organization
+  tags: [actions, security]
+  enabled: true

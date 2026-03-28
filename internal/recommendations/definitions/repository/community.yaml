@@ -1,0 +1,10 @@
+- id: repo-comm-001
+  scope: repository
+  title: GitHub Discussions not enabled
+  category: community
+  severity: info
+  description: GitHub Discussions is not enabled for this repository. Discussions provide a structured forum for questions, announcements, and community conversation separate from the issue tracker.
+  recommendation: Consider enabling GitHub Discussions to provide a dedicated channel for community Q&A and to reduce noise in the issue tracker.
+  learnMore: https://docs.github.com/en/discussions/quickstart
+  tags: [community, features]
+  enabled: true

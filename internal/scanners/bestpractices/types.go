@@ -4,6 +4,7 @@
 package bestpractices
 
 import (
+	"github.com/microsoft/ghqr/internal/recommendations"
 	"github.com/microsoft/ghqr/internal/scanners"
 )
 
@@ -40,6 +41,7 @@ const (
 
 // Issue represents a finding (issue or recommendation)
 type Issue struct {
+	RuleID         string `json:"rule_id,omitempty"`
 	Severity       string `json:"severity"`
 	Category       string `json:"category"`
 	Issue          string `json:"issue"`
@@ -65,26 +67,40 @@ type Summary struct {
 }
 
 // Evaluator provides best practices evaluation
-type Evaluator struct{}
+type Evaluator struct {
+	registry *recommendations.Registry
+}
 
-// NewEvaluator creates a new evaluator
-func NewEvaluator() *Evaluator {
-	return &Evaluator{}
+// NewEvaluator creates a new evaluator backed by the provided rule registry.
+func NewEvaluator(registry *recommendations.Registry) *Evaluator {
+	return &Evaluator{registry: registry}
 }
 
 // Helper functions to reduce repetition
 
-func addIssue(issues *[]Issue, severity, category, issue, recommendation string, learnMore ...string) {
-	url := ""
-	if len(learnMore) > 0 {
-		url = learnMore[0]
+// addFinding looks up the rule in the registry and appends a finding to the slice.
+// If the rule is not found or is disabled, no finding is added.
+// The title override allows callers to supply a dynamic message (e.g. alert counts)
+// while still pulling severity, category, and learnMore from the registry.
+func (e *Evaluator) addFinding(findings *[]Issue, ruleID, titleOverride string) {
+	if e.registry == nil {
+		return
 	}
-	*issues = append(*issues, Issue{
-		Severity:       severity,
-		Category:       category,
-		Issue:          issue,
-		Recommendation: recommendation,
-		LearnMore:      url,
+	def, ok := e.registry.Get(ruleID)
+	if !ok || !def.Enabled {
+		return
+	}
+	title := def.Title
+	if titleOverride != "" {
+		title = titleOverride
+	}
+	*findings = append(*findings, Issue{
+		RuleID:         def.ID,
+		Severity:       def.Severity,
+		Category:       def.Category,
+		Issue:          title,
+		Recommendation: def.Recommendation,
+		LearnMore:      def.LearnMore,
 	})
 }
 
@@ -106,11 +122,10 @@ func checkEnabled(feature *scanners.SecurityFeature) bool {
 	return feature != nil && feature.Enabled
 }
 
-func createResult(e *Evaluator, issues, recommendations []Issue) *EvaluationResult {
-	all := append(issues, recommendations...)
+func createResult(e *Evaluator, findings []Issue) *EvaluationResult {
 	return &EvaluationResult{
-		Recommendations: all,
-		Summary:         e.createSummary(all),
+		Recommendations: findings,
+		Summary:         e.createSummary(findings),
 	}
 }
 

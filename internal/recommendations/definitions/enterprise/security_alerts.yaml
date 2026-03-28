@@ -1,0 +1,43 @@
+- id: ent-alert-001
+  scope: enterprise
+  title: Critical Dependabot alerts open across enterprise
+  category: dependencies
+  severity: critical
+  description: One or more critical-severity Dependabot alerts are open across repositories in this enterprise, indicating known critical security vulnerabilities.
+  recommendation: Immediately remediate critical dependency vulnerabilities across all affected repositories and organizations in the enterprise.
+  learnMore: https://docs.github.com/en/enterprise-cloud@latest/code-security/dependabot/dependabot-alerts/about-dependabot-alerts
+  tags: [dependabot, security, dependencies]
+  enabled: true
+
+- id: ent-alert-002
+  scope: enterprise
+  title: High-severity Dependabot alerts open across enterprise
+  category: dependencies
+  severity: high
+  description: One or more high-severity Dependabot alerts are open across repositories in this enterprise.
+  recommendation: Prioritize fixing high-severity dependency vulnerabilities across all affected organizations and repositories.
+  learnMore: https://docs.github.com/en/enterprise-cloud@latest/code-security/dependabot/dependabot-alerts/about-dependabot-alerts
+  tags: [dependabot, security, dependencies]
+  enabled: true
+
+- id: ent-alert-003
+  scope: enterprise
+  title: Code scanning alerts open across enterprise
+  category: security
+  severity: high
+  description: There are open code scanning alerts across repositories in this enterprise, indicating potential security vulnerabilities detected by static analysis.
+  recommendation: Review and address all open code scanning findings across affected organizations and repositories.
+  learnMore: https://docs.github.com/en/enterprise-cloud@latest/code-security/code-scanning
+  tags: [code_scanning, security]
+  enabled: true
+
+- id: ent-alert-004
+  scope: enterprise
+  title: Secret scanning alerts open across enterprise
+  category: security
+  severity: critical
+  description: There are open secret scanning alerts across repositories in this enterprise, indicating that secrets may have been exposed.
+  recommendation: Immediately revoke and rotate any exposed secrets, then close the secret scanning alerts after confirming remediation.
+  learnMore: https://docs.github.com/en/enterprise-cloud@latest/code-security/secret-scanning
+  tags: [secret_scanning, security]
+  enabled: true

@@ -7,21 +7,13 @@ import (
 	"github.com/microsoft/ghqr/internal/scanners"
 )
 
-// EvaluateDiscussionSettings evaluates whether GitHub Discussions are enabled
+// EvaluateDiscussionSettings evaluates whether GitHub Discussions are enabled.
 func (e *Evaluator) EvaluateDiscussionSettings(repoData *scanners.RepositoryData) *EvaluationResult {
-	issues := []Issue{}
-	recommendations := []Issue{}
+	var findings []Issue
 
-	if repoData.DiscussionSettings == nil {
-		return createResult(e, issues, recommendations)
+	if repoData.DiscussionSettings != nil && !repoData.DiscussionSettings.Enabled {
+		e.addFinding(&findings, "repo-comm-001", "")
 	}
 
-	if !repoData.DiscussionSettings.Enabled {
-		addRecommendation(&recommendations, SeverityInfo, CategoryCommunity,
-			"GitHub Discussions not enabled",
-			"Consider enabling Discussions for community Q&A and reducing issue tracker noise",
-			"https://docs.github.com/en/discussions/quickstart")
-	}
-
-	return createResult(e, issues, recommendations)
+	return createResult(e, findings)
 }

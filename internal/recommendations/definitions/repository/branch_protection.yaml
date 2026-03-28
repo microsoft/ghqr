@@ -1,0 +1,142 @@
+- id: repo-bp-001
+  scope: repository
+  title: No branch protection configured on default branch
+  category: branch_protection
+  severity: critical
+  description: The default branch has no branch protection rule, meaning anyone with write access can push directly, force-push, or delete it.
+  recommendation: "CRITICAL: Enable comprehensive branch protection on production branches to prevent direct pushes, require code review, and enforce CI checks."
+  learnMore: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches
+  tags: [branch_protection, security]
+  enabled: true
+
+- id: repo-bp-002
+  scope: repository
+  title: No approving reviews required before merge
+  category: branch_protection
+  severity: critical
+  description: The branch protection rule requires zero approving reviews, allowing pull requests to be merged without any peer review.
+  recommendation: "CRITICAL: Require at least 1 approving review before merge to enforce code review and catch errors or malicious changes."
+  learnMore: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches#require-pull-request-reviews-before-merging
+  tags: [branch_protection, code_review]
+  enabled: true
+
+- id: repo-bp-003
+  scope: repository
+  title: Only 1 approving review required
+  category: branch_protection
+  severity: medium
+  description: The branch protection rule requires only 1 approving review, which may be insufficient for high-risk changes on production branches.
+  recommendation: Consider requiring 2 or more reviews for production branches to reduce the risk of unreviewed code reaching production.
+  learnMore: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches#require-pull-request-reviews-before-merging
+  tags: [branch_protection, code_review]
+  enabled: true
+
+- id: repo-bp-004
+  scope: repository
+  title: Stale reviews not dismissed on new commits
+  category: branch_protection
+  severity: high
+  description: When new commits are pushed to a pull request, existing approvals are not automatically dismissed, so stale approvals remain valid even after the code changes.
+  recommendation: Enable stale review dismissal so that existing approvals are invalidated when new commits are pushed, ensuring reviewers always see the latest code.
+  learnMore: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches#dismiss-stale-pull-request-approvals-when-new-commits-are-pushed
+  tags: [branch_protection, code_review]
+  enabled: true
+
+- id: repo-bp-005
+  scope: repository
+  title: Code owner review not required
+  category: branch_protection
+  severity: medium
+  description: The branch protection rule does not require a review from a designated code owner, allowing changes to critical paths without expert oversight.
+  recommendation: Enable the code owner review requirement so changes to paths defined in CODEOWNERS must be approved by the designated owner.
+  learnMore: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+  tags: [branch_protection, code_review]
+  enabled: true
+
+- id: repo-bp-006
+  scope: repository
+  title: Pull request reviews not configured
+  category: branch_protection
+  severity: critical
+  description: The branch protection rule exists but does not include any pull request review requirements, making it possible to merge without peer review.
+  recommendation: "CRITICAL: Configure PR review requirements including required approver count, stale review dismissal, and code owner reviews."
+  learnMore: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches#require-pull-request-reviews-before-merging
+  tags: [branch_protection, code_review]
+  enabled: true
+
+- id: repo-bp-007
+  scope: repository
+  title: Strict status checks not enabled
+  category: branch_protection
+  severity: high
+  description: The required status checks configuration does not enforce that the branch is up-to-date with the base branch before merging, which can allow merging code that has not been tested against the latest state.
+  recommendation: Enable strict status checks to require branches to be up-to-date before merging.
+  learnMore: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches#require-status-checks-before-merging
+  tags: [branch_protection, ci_cd]
+  enabled: true
+
+- id: repo-bp-008
+  scope: repository
+  title: No specific status checks required
+  category: branch_protection
+  severity: high
+  description: Required status checks are enabled but no specific checks are listed, which means no CI/CD jobs are required to pass before merging.
+  recommendation: Configure specific required CI/CD checks (e.g. build, test, lint) that must pass before a pull request can be merged.
+  learnMore: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches#require-status-checks-before-merging
+  tags: [branch_protection, ci_cd]
+  enabled: true
+
+- id: repo-bp-009
+  scope: repository
+  title: No required status checks configured
+  category: branch_protection
+  severity: high
+  description: The branch protection rule has no status check requirement, allowing pull requests to be merged even if CI/CD jobs fail.
+  recommendation: Configure CI/CD checks that must pass before any pull request can be merged.
+  learnMore: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches#require-status-checks-before-merging
+  tags: [branch_protection, ci_cd]
+  enabled: true
+
+- id: repo-bp-010
+  scope: repository
+  title: Force pushes allowed on protected branch
+  category: branch_protection
+  severity: critical
+  description: Force pushes are permitted on the protected branch, which allows any authorized user to rewrite history, potentially destroying audit trails and causing data loss for collaborators.
+  recommendation: "CRITICAL: Disable force pushes on all protected branches to prevent history rewriting."
+  learnMore: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches
+  tags: [branch_protection, security]
+  enabled: true
+
+- id: repo-bp-011
+  scope: repository
+  title: Branch deletion allowed on protected branch
+  category: branch_protection
+  severity: high
+  description: The protected branch can be deleted by users with write access, risking accidental or malicious deletion of the main branch.
+  recommendation: Disable branch deletion for all protected branches.
+  learnMore: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches
+  tags: [branch_protection, security]
+  enabled: true
+
+- id: repo-bp-012
+  scope: repository
+  title: Signed commits not required
+  category: branch_protection
+  severity: medium
+  description: Commits are not required to be cryptographically signed, making it impossible to verify whether commits genuinely came from the stated author.
+  recommendation: Enable required commit signing to verify the authorship and integrity of every commit merged into the default branch.
+  learnMore: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches
+  tags: [branch_protection, security]
+  enabled: true
+
+- id: repo-bp-013
+  scope: repository
+  title: Linear history not required
+  category: branch_protection
+  severity: low
+  description: Merge commits are allowed, which can result in a complex, non-linear commit history that is harder to read and bisect.
+  recommendation: Consider requiring squash or rebase merges to maintain a clean, linear commit history.
+  learnMore: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches
+  tags: [branch_protection, maintenance]
+  enabled: true
