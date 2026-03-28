@@ -1,0 +1,21 @@
+- id: ent-log-001
+  scope: enterprise
+  title: Suspicious audit log events detected
+  category: security
+  severity: critical
+  description: One or more suspicious events (such as repository destruction, member removal, or OAuth token revocations) have been detected in the enterprise audit log. These events may indicate a compromised account or insider threat.
+  recommendation: Review the flagged events in the Enterprise audit log immediately. Actions like repo.destroy, org.remove_member, and oauth_access.revoke can indicate account compromise. Investigate and remediate as needed.
+  learnMore: https://docs.github.com/en/enterprise-cloud@latest/admin/monitoring-activity-in-your-enterprise/reviewing-audit-logs-for-your-enterprise/about-the-audit-log-for-your-enterprise
+  tags: [audit_log, security]
+  enabled: true
+
+- id: ent-log-002
+  scope: enterprise
+  title: Audit log streaming configuration cannot be verified
+  category: security
+  severity: high
+  description: ghqr cannot automatically verify whether audit log streaming is enabled and flowing to a SIEM or secure storage. Without streaming, audit events may be lost after 180 days and cannot be correlated with other security signals.
+  recommendation: Manually verify that audit log streaming is enabled and targeting a SIEM or secure storage in Enterprise → Settings → Audit log → Audit log streaming.
+  learnMore: https://docs.github.com/en/enterprise-cloud@latest/admin/monitoring-activity-in-your-enterprise/reviewing-audit-logs-for-your-enterprise/streaming-the-audit-log-for-your-enterprise
+  tags: [audit_log, security]
+  enabled: true

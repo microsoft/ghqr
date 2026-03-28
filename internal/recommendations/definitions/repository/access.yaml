@@ -1,0 +1,54 @@
+- id: repo-acc-001
+  scope: repository
+  title: Excessive admin collaborators
+  category: access_control
+  severity: high
+  description: More than 3 users have direct admin access to this repository, which increases the blast radius of a compromised account and makes access auditing harder.
+  recommendation: Review admin access and apply the principle of least privilege. Consider using teams with limited permissions instead of direct admin grants.
+  learnMore: https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization
+  tags: [access_control, permissions]
+  enabled: true
+
+- id: repo-acc-002
+  scope: repository
+  title: Direct collaborators instead of teams
+  category: access_control
+  severity: medium
+  description: The repository has direct collaborator access grants. Direct collaborator access is harder to audit and manage compared to team-based access.
+  recommendation: Prefer team-based access over direct collaborators for better auditability and easier access management.
+  learnMore: https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-outside-collaborators/about-outside-collaborators
+  tags: [access_control, permissions]
+  enabled: true
+
+- id: repo-acc-003
+  scope: repository
+  title: Deploy keys with write access
+  category: security
+  severity: high
+  description: One or more deploy keys have write access to this repository. Write deploy keys allow the key holder to push code, which poses a risk if the key is compromised.
+  recommendation: Use read-only deploy keys where possible. For write operations, prefer GitHub Apps or OIDC federation, which provide better auditability and can be rotated more easily.
+  learnMore: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/managing-deploy-keys
+  tags: [access_control, security, deploy_keys]
+  enabled: true
+
+- id: repo-acc-004
+  scope: repository
+  title: Unverified deploy keys
+  category: security
+  severity: medium
+  description: One or more deploy keys are unverified. Unverified keys may not belong to authorized systems.
+  recommendation: Verify all deploy keys to ensure they are associated with authorized systems and remove any unknown keys.
+  learnMore: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/managing-deploy-keys
+  tags: [access_control, security, deploy_keys]
+  enabled: true
+
+- id: repo-acc-005
+  scope: repository
+  title: Deploy keys present — consider GitHub Apps or OIDC
+  category: security
+  severity: medium
+  description: Deploy keys are configured for this repository. While functional, deploy keys are less auditable and harder to rotate than modern alternatives.
+  recommendation: Consider migrating to GitHub Apps or OIDC federation for automated deployment credentials, which offer better security, auditability, and key rotation.
+  learnMore: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/managing-deploy-keys
+  tags: [access_control, security, deploy_keys]
+  enabled: true

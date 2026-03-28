@@ -16,54 +16,38 @@ func (e *Evaluator) EvaluateCopilot(data *scanners.OrgCopilotData) *EvaluationRe
 	}
 
 	if !data.BillingEnabled {
-		return &EvaluationResult{
-			Recommendations: []Issue{{
-				Severity:       SeverityInfo,
-				Category:       CategoryCopilotSecurity,
-				Issue:          "GitHub Copilot is not enabled for this organization",
-				Recommendation: "Consider enabling GitHub Copilot to improve developer productivity",
-				LearnMore:      "https://docs.github.com/en/copilot/about-github-copilot/what-is-github-copilot",
-			}},
-			Summary: &Summary{},
-		}
+		var findings []Issue
+		addRecommendation(&findings, SeverityInfo, CategoryCopilotSecurity,
+			"GitHub Copilot is not enabled for this organization",
+			"Consider enabling GitHub Copilot to improve developer productivity",
+			"https://docs.github.com/en/copilot/about-github-copilot/what-is-github-copilot")
+		return createResult(e, findings)
 	}
 
-	var issues []Issue
-	var recommendations []Issue
+	var findings []Issue
 
-	// Seat management: assign_selected is safest; assign_all exposes all members.
 	switch data.SeatManagementSetting {
 	case "assign_all":
-		addIssue(&issues, SeverityMedium, CategoryCopilotCost,
-			"Copilot seats assigned to all organization members (assign_all)",
-			"Switch to 'assign_selected' to control costs and limit access to intended users",
-			"https://docs.github.com/en/copilot/managing-copilot/managing-github-copilot-in-your-organization/managing-access-to-github-copilot-in-your-organization/granting-access-to-copilot-for-members-of-your-organization")
+		e.addFinding(&findings, "org-cop-001", "")
 	case "disabled":
-		addRecommendation(&recommendations, SeverityInfo, CategoryCopilotSecurity,
+		addRecommendation(&findings, SeverityInfo, CategoryCopilotSecurity,
 			"Copilot seat assignment is disabled",
 			"No action needed unless you intend to roll out Copilot",
 			"https://docs.github.com/en/copilot/managing-copilot/managing-github-copilot-in-your-organization/managing-access-to-github-copilot-in-your-organization/granting-access-to-copilot-for-members-of-your-organization")
 	}
 
-	// Public code suggestions: "allowed" means completions may reproduce public licensed code.
 	if data.PublicCodeSuggestions == "allowed" {
-		addIssue(&issues, SeverityHigh, CategoryCopilotSecurity,
-			"Copilot is allowed to suggest code matching public repository content",
-			"Set public code suggestions to 'blocked' to reduce IP/license risk",
-			"https://docs.github.com/en/copilot/managing-copilot/managing-github-copilot-in-your-organization/managing-policies-for-copilot-in-your-organization")
+		e.addFinding(&findings, "org-cop-002", "")
 	}
 
-	// Seat utilization: flag when more than 20% of seats are inactive this cycle.
 	if data.TotalSeats > 0 {
 		inactivePct := float64(data.InactiveThisCycle) / float64(data.TotalSeats) * 100
 		if inactivePct > 20 {
-			addRecommendation(&recommendations, SeverityMedium, CategoryCopilotCost,
+			e.addFinding(&findings, "org-cop-003",
 				fmt.Sprintf("%.0f%% of Copilot seats (%d/%d) were inactive this billing cycle",
-					inactivePct, data.InactiveThisCycle, data.TotalSeats),
-				"Reclaim unused seats to reduce costs",
-				"https://docs.github.com/en/copilot/managing-copilot/managing-github-copilot-in-your-organization/reviewing-activity-related-to-github-copilot-in-your-organization/reviewing-your-organization-s-copilot-seat-assignments")
+					inactivePct, data.InactiveThisCycle, data.TotalSeats))
 		} else {
-			addRecommendation(&recommendations, SeverityInfo, CategoryCopilotCost,
+			addRecommendation(&findings, SeverityInfo, CategoryCopilotCost,
 				fmt.Sprintf("Copilot seat utilization: %d active, %d inactive out of %d total",
 					data.ActiveThisCycle, data.InactiveThisCycle, data.TotalSeats),
 				"Monitor seat utilization regularly for cost efficiency",
@@ -71,5 +55,5 @@ func (e *Evaluator) EvaluateCopilot(data *scanners.OrgCopilotData) *EvaluationRe
 		}
 	}
 
-	return createResult(e, issues, recommendations)
+	return createResult(e, findings)
 }

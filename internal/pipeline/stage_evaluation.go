@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/microsoft/ghqr/internal/recommendations"
 	"github.com/microsoft/ghqr/internal/scanners"
 	"github.com/microsoft/ghqr/internal/scanners/bestpractices"
 	"github.com/rs/zerolog/log"
@@ -19,11 +20,15 @@ type EvaluationStage struct {
 	eval *bestpractices.Evaluator
 }
 
-// NewEvaluationStage creates a new evaluation stage.
+// NewEvaluationStage creates a new evaluation stage backed by the embedded rule registry.
 func NewEvaluationStage() *EvaluationStage {
+	registry, err := recommendations.Load()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to load rule definitions")
+	}
 	return &EvaluationStage{
 		BaseStage: NewBaseStage("evaluation"),
-		eval:      bestpractices.NewEvaluator(),
+		eval:      bestpractices.NewEvaluator(registry),
 	}
 }
 

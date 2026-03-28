@@ -1,0 +1,76 @@
+- id: ent-ghas-001
+  scope: enterprise
+  title: GitHub Advanced Security not enabled at enterprise level
+  category: security
+  severity: high
+  description: GitHub Advanced Security (GHAS) is not enabled as an enterprise-level default. Without GHAS, code scanning, advanced secret scanning, and dependency review are unavailable across the enterprise's organizations.
+  recommendation: Enable GHAS enterprise-wide to unlock code scanning, secret scanning, and dependency review across all organizations. Requires a GHAS license.
+  learnMore: https://docs.github.com/en/enterprise-cloud@latest/admin/code-security/managing-github-advanced-security-for-your-enterprise/enabling-github-advanced-security-for-your-enterprise
+  tags: [ghas, security]
+  enabled: true
+
+- id: ent-ghas-002
+  scope: enterprise
+  title: Secret scanning not enabled as enterprise default
+  category: security
+  severity: high
+  description: Secret scanning is not enabled as an enterprise-wide default, leaving repositories without automatic detection of accidentally committed secrets.
+  recommendation: Enable secret scanning as an enterprise default to detect leaked credentials across all repositories.
+  learnMore: https://docs.github.com/en/enterprise-cloud@latest/admin/code-security/managing-github-advanced-security-for-your-enterprise/configuring-secret-scanning-for-your-enterprise
+  tags: [secret_scanning, security, ghas]
+  enabled: true
+
+- id: ent-ghas-003
+  scope: enterprise
+  title: Secret scanning push protection not enabled as enterprise default
+  category: security
+  severity: high
+  description: Secret scanning push protection is not enabled as an enterprise-wide default. Without push protection, secrets can be committed to repositories before they are detected.
+  recommendation: Enable push protection as an enterprise default to block commits containing secrets before they reach repositories.
+  learnMore: https://docs.github.com/en/enterprise-cloud@latest/admin/code-security/managing-github-advanced-security-for-your-enterprise/configuring-secret-scanning-for-your-enterprise
+  tags: [secret_scanning, security, ghas]
+  enabled: true
+
+- id: ent-ghas-004
+  scope: enterprise
+  title: Dependabot alerts not enabled as enterprise default
+  category: dependencies
+  severity: high
+  description: Dependabot alerts are not enabled as an enterprise-wide default, so repositories may not receive vulnerability notifications.
+  recommendation: Enable Dependabot alerts enterprise-wide to surface vulnerable dependencies across all organizations.
+  learnMore: https://docs.github.com/en/enterprise-cloud@latest/admin/code-security/managing-dependabot/enabling-dependabot-for-your-enterprise
+  tags: [dependabot, security, dependencies]
+  enabled: true
+
+- id: ent-ghas-005
+  scope: enterprise
+  title: Dependabot security updates not enabled as enterprise default
+  category: dependencies
+  severity: medium
+  description: Dependabot security updates are not enabled as an enterprise-wide default. Alerts will surface but automated remediation PRs will not be created.
+  recommendation: Enable Dependabot security updates enterprise-wide to automatically open pull requests that remediate vulnerable dependencies.
+  learnMore: https://docs.github.com/en/enterprise-cloud@latest/admin/code-security/managing-dependabot/enabling-dependabot-for-your-enterprise
+  tags: [dependabot, security, dependencies]
+  enabled: true
+
+- id: ent-ghas-006
+  scope: enterprise
+  title: Dependency graph not enabled as enterprise default
+  category: dependencies
+  severity: medium
+  description: The dependency graph is not enabled as an enterprise-wide default. The dependency graph is required for Dependabot alerts and dependency review to function.
+  recommendation: Enable the dependency graph enterprise-wide to power Dependabot alerts and dependency review across all organizations.
+  learnMore: https://docs.github.com/en/enterprise-cloud@latest/admin/code-security/managing-dependabot/enabling-dependabot-for-your-enterprise
+  tags: [dependabot, security, dependencies]
+  enabled: true
+
+- id: ent-ghas-007
+  scope: enterprise
+  title: Secret scanning for non-provider patterns not enabled as enterprise default
+  category: security
+  severity: low
+  description: Detection of non-provider generic secrets (such as high-entropy tokens) is not enabled as an enterprise default, providing less coverage for custom or internal secrets.
+  recommendation: Enable detection of generic and non-provider secrets as an enterprise default for broader secret scanning coverage.
+  learnMore: https://docs.github.com/en/enterprise-cloud@latest/admin/code-security/managing-github-advanced-security-for-your-enterprise/configuring-secret-scanning-for-your-enterprise
+  tags: [secret_scanning, security, ghas]
+  enabled: true

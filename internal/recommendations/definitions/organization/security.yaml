@@ -1,0 +1,120 @@
+- id: org-sec-001
+  scope: organization
+  title: Two-factor authentication not required
+  category: security
+  severity: high
+  description: The organization does not require two-factor authentication (2FA) for all members. This means any member account without 2FA is an easy target for credential-based attacks.
+  recommendation: Enable the 2FA requirement in organization security settings to ensure all members must use two-factor authentication.
+  learnMore: https://docs.github.com/en/organizations/keeping-your-organization-secure/managing-two-factor-authentication-for-your-organization/requiring-two-factor-authentication-in-your-organization
+  tags: [security, authentication]
+  enabled: true
+
+- id: org-sec-002
+  scope: organization
+  title: Web commit signoff not required
+  category: security
+  severity: medium
+  description: The organization does not require commit signoff for commits made through the GitHub web interface. Signoff creates an auditable record of who approved each change.
+  recommendation: Consider enabling web commit signoff to improve the audit trail for changes made directly through the GitHub UI.
+  learnMore: https://docs.github.com/en/organizations/managing-organization-settings/managing-the-commit-signoff-policy-for-your-organization
+  tags: [security, audit]
+  enabled: true
+
+- id: org-sec-003
+  scope: organization
+  title: Default repository permission set to admin
+  category: access_control
+  severity: high
+  description: The organization's default repository permission is set to 'admin', which grants all members admin access to every repository by default. This violates the principle of least privilege.
+  recommendation: Change the default repository permission to 'read' or 'write' to ensure members only have the minimum access required.
+  learnMore: https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/setting-base-permissions-for-an-organization
+  tags: [access_control, permissions]
+  enabled: true
+
+- id: org-sec-004
+  scope: organization
+  title: Members can create public repositories
+  category: access_control
+  severity: medium
+  description: Organization members are allowed to create public repositories. This increases the risk of accidental public exposure of proprietary code.
+  recommendation: Consider restricting public repository creation to organization owners or admins to prevent accidental data exposure.
+  learnMore: https://docs.github.com/en/organizations/managing-organization-settings/restricting-repository-creation-in-your-organization
+  tags: [access_control, visibility]
+  enabled: true
+
+- id: org-sec-005
+  scope: organization
+  title: No security manager team assigned
+  category: access_control
+  severity: medium
+  description: No security manager team is assigned to this organization. Without designated security managers, security alerts and configurations may not be actively monitored.
+  recommendation: Assign a security manager team to ensure that security alerts and configurations are reviewed by the right people.
+  learnMore: https://docs.github.com/en/organizations/managing-peoples-access-to-your-organization-with-roles/managing-security-managers-in-your-organization
+  tags: [access_control, security]
+  enabled: true
+
+- id: org-def-001
+  scope: organization
+  title: Dependabot alerts not enabled by default for new repositories
+  category: dependencies
+  severity: high
+  description: Dependabot alerts are not automatically enabled for new repositories created in this organization. New repositories will not receive vulnerability notifications until manually configured.
+  recommendation: Enable 'Dependabot alerts' in Organization → Settings → Code security and analysis to apply this protection automatically to all new repositories.
+  learnMore: https://docs.github.com/en/code-security/dependabot/dependabot-alerts/configuring-dependabot-alerts
+  tags: [dependabot, security, defaults]
+  enabled: true
+
+- id: org-def-002
+  scope: organization
+  title: Dependabot security updates not enabled by default for new repositories
+  category: dependencies
+  severity: medium
+  description: Dependabot security updates are not automatically enabled for new repositories. Without this, Dependabot will alert on vulnerabilities but will not automatically open pull requests to fix them.
+  recommendation: Enable 'Dependabot security updates' in Organization → Settings → Code security and analysis.
+  learnMore: https://docs.github.com/en/code-security/dependabot/dependabot-security-updates/configuring-dependabot-security-updates
+  tags: [dependabot, security, defaults]
+  enabled: true
+
+- id: org-def-003
+  scope: organization
+  title: Dependency graph not enabled by default for new repositories
+  category: dependencies
+  severity: medium
+  description: The dependency graph is not automatically enabled for new repositories. The dependency graph is required for Dependabot alerts and dependency review to function.
+  recommendation: Enable the dependency graph in Organization → Settings → Code security and analysis.
+  learnMore: https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/about-the-dependency-graph
+  tags: [dependabot, security, defaults]
+  enabled: true
+
+- id: org-def-004
+  scope: organization
+  title: Secret scanning not enabled by default for new repositories
+  category: security
+  severity: high
+  description: Secret scanning is not automatically enabled for new repositories, leaving newly created repositories without protection against accidentally committed secrets.
+  recommendation: Enable 'Secret scanning' in Organization → Settings → Code security and analysis to protect all new repositories from the moment they are created.
+  learnMore: https://docs.github.com/en/code-security/secret-scanning/about-secret-scanning
+  tags: [secret_scanning, security, defaults]
+  enabled: true
+
+- id: org-def-005
+  scope: organization
+  title: Secret scanning push protection not enabled by default for new repositories
+  category: security
+  severity: high
+  description: Push protection for secret scanning is not automatically enabled for new repositories, meaning secrets can be committed before they are detected.
+  recommendation: Enable 'Push protection' in Organization → Settings → Code security and analysis to block commits containing secrets before they reach the repository.
+  learnMore: https://docs.github.com/en/code-security/secret-scanning/introduction/about-push-protection
+  tags: [secret_scanning, security, defaults]
+  enabled: true
+
+- id: org-def-006
+  scope: organization
+  title: GitHub Advanced Security not enabled by default for new repositories
+  category: security
+  severity: medium
+  description: GitHub Advanced Security (GHAS) is not automatically enabled for new repositories. GHAS is required for code scanning, advanced secret scanning, and dependency review.
+  recommendation: Enable 'GitHub Advanced Security' in Organization → Settings → Code security and analysis (requires a GHAS license).
+  learnMore: https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
+  tags: [ghas, security, defaults]
+  enabled: true

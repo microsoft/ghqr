@@ -1,0 +1,98 @@
+- id: repo-sec-001
+  scope: repository
+  title: Dependabot alerts not enabled
+  category: security
+  severity: high
+  description: Dependabot alerts are disabled for this repository. GitHub will not notify you when dependencies have known security vulnerabilities.
+  recommendation: Enable Dependabot alerts in repository settings to receive security vulnerability notifications for your dependencies.
+  learnMore: https://docs.github.com/en/code-security/dependabot/dependabot-alerts/about-dependabot-alerts
+  tags: [dependabot, security, dependencies]
+  enabled: true
+
+- id: repo-sec-002
+  scope: repository
+  title: Critical Dependabot alerts open
+  category: security
+  severity: critical
+  description: One or more critical-severity Dependabot alerts are currently open in this repository, indicating known critical security vulnerabilities in dependencies.
+  recommendation: Immediately address critical security vulnerabilities by updating the affected dependencies or applying patches.
+  learnMore: https://docs.github.com/en/code-security/dependabot/dependabot-alerts/about-dependabot-alerts
+  tags: [dependabot, security, dependencies]
+  enabled: true
+
+- id: repo-sec-003
+  scope: repository
+  title: High-severity Dependabot alerts open
+  category: security
+  severity: high
+  description: One or more high-severity Dependabot alerts are currently open in this repository.
+  recommendation: Prioritize fixing high-severity dependency vulnerabilities to reduce the attack surface of this repository.
+  learnMore: https://docs.github.com/en/code-security/dependabot/dependabot-alerts/about-dependabot-alerts
+  tags: [dependabot, security, dependencies]
+  enabled: true
+
+- id: repo-sec-004
+  scope: repository
+  title: No SECURITY.md file found
+  category: security
+  severity: low
+  description: The repository does not have a SECURITY.md file, which means there is no documented process for reporting security vulnerabilities.
+  recommendation: Add a SECURITY.md file to document how security vulnerabilities should be reported for this project.
+  learnMore: https://docs.github.com/en/code-security/getting-started/adding-a-security-policy-to-your-repository
+  tags: [security, community]
+  enabled: true
+
+- id: repo-sec-005
+  scope: repository
+  title: No CODEOWNERS file found
+  category: access_control
+  severity: medium
+  description: The repository does not have a CODEOWNERS file, so changes to critical paths have no designated reviewer requirement.
+  recommendation: Add a CODEOWNERS file to assign code ownership and ensure that changes to sensitive paths require review from the appropriate team.
+  learnMore: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+  tags: [access_control, code_review]
+  enabled: true
+
+- id: repo-sec-006
+  scope: repository
+  title: Dependabot alerts enabled but no dependabot.yml found
+  category: security
+  severity: medium
+  description: Dependabot vulnerability alerts are enabled but there is no .github/dependabot.yml configuration file, so automated dependency update pull requests are not configured.
+  recommendation: Create a .github/dependabot.yml file to enable automated dependency version update pull requests in addition to alerts.
+  learnMore: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+  tags: [dependabot, security, dependencies]
+  enabled: true
+
+- id: repo-sec-007
+  scope: repository
+  title: Dependabot not configured
+  category: security
+  severity: high
+  description: Dependabot is not configured for this repository. Neither alerts nor automated dependency updates are enabled.
+  recommendation: Enable Dependabot alerts and create .github/dependabot.yml for automated security and version updates of dependencies.
+  learnMore: https://docs.github.com/en/code-security/dependabot/dependabot-alerts/about-dependabot-alerts
+  tags: [dependabot, security, dependencies]
+  enabled: true
+
+- id: repo-sec-008
+  scope: repository
+  title: Code scanning (CodeQL) not configured
+  category: security
+  severity: high
+  description: GitHub code scanning (CodeQL) has not been configured for this repository, leaving it without automated static analysis for security vulnerabilities.
+  recommendation: Enable GitHub code scanning with CodeQL to automatically detect security vulnerabilities in your source code on every pull request.
+  learnMore: https://docs.github.com/en/code-security/code-scanning/introduction-to-code-scanning/about-code-scanning
+  tags: [code_scanning, security]
+  enabled: true
+
+- id: repo-sec-009
+  scope: repository
+  title: No custom CodeQL configuration file
+  category: security
+  severity: info
+  description: No custom CodeQL configuration file was found. The default CodeQL configuration may miss some project-specific security queries.
+  recommendation: Consider creating a custom CodeQL configuration file to extend scanning with additional security queries or to exclude false-positive paths.
+  learnMore: https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/customizing-your-advanced-setup-for-code-scanning
+  tags: [code_scanning, security]
+  enabled: true

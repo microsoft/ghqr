@@ -1,0 +1,32 @@
+- id: org-cop-001
+  scope: organization
+  title: Copilot seats assigned to all organization members
+  category: copilot_cost
+  severity: medium
+  description: GitHub Copilot seat assignment is set to 'assign_all', which grants Copilot access to every member of the organization. This can lead to unnecessary costs for members who do not use Copilot.
+  recommendation: Switch to 'assign_selected' to control costs and limit Copilot access to members who actively use it.
+  learnMore: https://docs.github.com/en/copilot/managing-copilot/managing-github-copilot-in-your-organization/managing-access-to-github-copilot-in-your-organization/granting-access-to-copilot-for-members-of-your-organization
+  tags: [copilot, cost]
+  enabled: true
+
+- id: org-cop-002
+  scope: organization
+  title: Copilot allowed to suggest code matching public repositories
+  category: copilot_security
+  severity: high
+  description: Copilot is configured to allow suggestions that match public repository content. This increases the risk of incorporating licensed open-source code without attribution, creating potential IP or compliance issues.
+  recommendation: Set public code suggestions to 'blocked' to reduce IP and license risk from Copilot suggestions.
+  learnMore: https://docs.github.com/en/copilot/managing-copilot/managing-github-copilot-in-your-organization/managing-policies-for-copilot-in-your-organization
+  tags: [copilot, security, compliance]
+  enabled: true
+
+- id: org-cop-003
+  scope: organization
+  title: High percentage of inactive Copilot seats
+  category: copilot_cost
+  severity: medium
+  description: More than 20% of Copilot seats were inactive during the most recent billing cycle, indicating potential wasteful spending.
+  recommendation: Reclaim unused Copilot seats to reduce costs. Review seat assignments and remove seats for members who are not actively using Copilot.
+  learnMore: https://docs.github.com/en/copilot/managing-copilot/managing-github-copilot-in-your-organization/reviewing-activity-related-to-github-copilot-in-your-organization/reviewing-your-organization-s-copilot-seat-assignments
+  tags: [copilot, cost]
+  enabled: true

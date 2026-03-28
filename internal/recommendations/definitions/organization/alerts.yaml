@@ -1,0 +1,54 @@
+- id: org-alert-001
+  scope: organization
+  title: Critical Dependabot alerts open across organization
+  category: dependencies
+  severity: critical
+  description: One or more critical-severity Dependabot alerts are open across repositories in this organization, indicating known critical security vulnerabilities in dependencies.
+  recommendation: Immediately remediate critical dependency vulnerabilities across all affected repositories.
+  learnMore: https://docs.github.com/en/code-security/dependabot/dependabot-alerts/about-dependabot-alerts
+  tags: [dependabot, security, dependencies]
+  enabled: true
+
+- id: org-alert-002
+  scope: organization
+  title: High-severity Dependabot alerts open across organization
+  category: dependencies
+  severity: high
+  description: One or more high-severity Dependabot alerts are open across repositories in this organization.
+  recommendation: Prioritize fixing high-severity dependency vulnerabilities across all affected repositories.
+  learnMore: https://docs.github.com/en/code-security/dependabot/dependabot-alerts/about-dependabot-alerts
+  tags: [dependabot, security, dependencies]
+  enabled: true
+
+- id: org-alert-003
+  scope: organization
+  title: Open Dependabot alerts across organization
+  category: dependencies
+  severity: medium
+  description: There are open Dependabot alerts across the organization (no critical or high severity). These medium or lower-severity vulnerabilities should still be reviewed.
+  recommendation: Review and remediate all remaining open Dependabot alerts across the organization.
+  learnMore: https://docs.github.com/en/code-security/dependabot/dependabot-alerts/about-dependabot-alerts
+  tags: [dependabot, security, dependencies]
+  enabled: true
+
+- id: org-alert-004
+  scope: organization
+  title: Code scanning alerts open across organization
+  category: security
+  severity: high
+  description: There are open code scanning alerts across repositories in this organization, indicating potential security vulnerabilities detected by static analysis.
+  recommendation: Review and address all open code scanning findings across affected repositories.
+  learnMore: https://docs.github.com/en/code-security/code-scanning/managing-code-scanning-alerts/managing-code-scanning-alerts-for-your-repository
+  tags: [code_scanning, security]
+  enabled: true
+
+- id: org-alert-005
+  scope: organization
+  title: Secret scanning alerts open across organization
+  category: security
+  severity: critical
+  description: There are open secret scanning alerts across repositories in this organization, indicating that secrets may have been exposed.
+  recommendation: Immediately revoke and rotate any exposed secrets, then close the secret scanning alerts after confirming remediation.
+  learnMore: https://docs.github.com/en/code-security/secret-scanning/managing-alerts-from-secret-scanning
+  tags: [secret_scanning, security]
+  enabled: true

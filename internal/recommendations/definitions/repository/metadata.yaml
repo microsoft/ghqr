@@ -1,0 +1,32 @@
+- id: repo-meta-001
+  scope: repository
+  title: Repository has no description
+  category: community
+  severity: medium
+  description: The repository has no description set, making it harder for developers to understand its purpose at a glance when browsing the organization.
+  recommendation: Add a concise description to every repository to improve discoverability and help new contributors understand the project's purpose quickly.
+  learnMore: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-repository-metadata
+  tags: [metadata, community, hygiene]
+  enabled: true
+
+- id: repo-meta-002
+  scope: repository
+  title: Repository has no topics
+  category: community
+  severity: low
+  description: The repository has no GitHub topics assigned. Topics improve searchability and enable org-wide filtering via custom properties or ruleset targeting.
+  recommendation: Add relevant GitHub topics to this repository to improve searchability and enable org-wide automation based on topics.
+  learnMore: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/classifying-your-repository-with-topics
+  tags: [metadata, community, hygiene]
+  enabled: true
+
+- id: repo-meta-003
+  scope: repository
+  title: Repository appears dormant but is not archived
+  category: maintenance
+  severity: low
+  description: No commits have been pushed to this repository in over a year, but it has not been archived. Dormant, unarchived repositories add maintenance burden and may confuse developers about whether the project is still active.
+  recommendation: Archive inactive repositories to reduce maintenance burden and signal to developers that the project is no longer actively maintained.
+  learnMore: https://docs.github.com/en/repositories/archiving-a-github-repository/archiving-repositories
+  tags: [maintenance, hygiene]
+  enabled: true
