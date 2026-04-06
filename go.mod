@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/google/go-github/v83 v83.0.0
-	github.com/mark3labs/mcp-go v0.46.0
+	github.com/mark3labs/mcp-go v0.47.0
 	github.com/rs/zerolog v1.35.0
 	github.com/shurcooL/githubv4 v0.0.0-20260209031235-2402fdf4a9ed
 	github.com/spf13/cobra v1.10.2
