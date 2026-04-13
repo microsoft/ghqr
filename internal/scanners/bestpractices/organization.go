@@ -16,7 +16,11 @@ func (e *Evaluator) EvaluateOrganizationSecurity(settings *scanners.OrgSettings)
 	var findings []Issue
 
 	if !settings.Security.TwoFactorRequirementEnabled {
-		e.addFinding(&findings, "org-sec-001", "")
+		if settings.Security.EMUEnabled {
+			e.addFinding(&findings, "org-sec-001-emu", "")
+		} else {
+			e.addFinding(&findings, "org-sec-001", "")
+		}
 	}
 
 	if !settings.Security.WebCommitSignoffRequired {

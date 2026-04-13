@@ -49,7 +49,7 @@ func (s *OrganizationScanStage) Execute(ctx *ScanContext) error {
 func (s *OrganizationScanStage) scanOrganization(ctx *ScanContext, org string) error {
 	log.Info().Str("organization", org).Msg("Scanning organization")
 
-	scanner := scanners.NewOrganizationScanner(ctx.GitHubClient, org)
+	scanner := scanners.NewOrganizationScanner(ctx.GitHubClient, ctx.GitHubGraphQLClient, org)
 	data, err := scanner.ScanAll(ctx.Ctx)
 	if err != nil {
 		return fmt.Errorf("scan failed: %w", err)
@@ -59,6 +59,15 @@ func (s *OrganizationScanStage) scanOrganization(ctx *ScanContext, org string) e
 
 	// Record which enterprise owns this org (empty string for directly-specified orgs).
 	data.Enterprise = ctx.Ownership[fmt.Sprintf("organization:%s", org)]
+
+	// Propagate EMU status from the parent enterprise to the org settings.
+	if data.Enterprise != "" && data.Settings != nil {
+		if entData, ok := ctx.Results[fmt.Sprintf("enterprise:%s", data.Enterprise)]; ok {
+			if ent, ok := entData.(*scanners.EnterpriseData); ok && ent.Settings != nil {
+				data.Settings.Security.EMUEnabled = ent.Settings.EMUEnabled
+			}
+		}
+	}
 
 	log.Info().Str("organization", org).Msg("Organization scan completed successfully")
 	return nil
