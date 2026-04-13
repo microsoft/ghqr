@@ -97,9 +97,22 @@ func (s *EvaluationStage) Execute(ctx *ScanContext) error {
 
 			// Branch protection detail (from GraphQL) — skip for archived repos (read-only)
 			archived := repo.Access != nil && repo.Access.Archived
-			if repo.BranchProtection != nil && !archived {
-				bpDetail := s.eval.EvaluateBranchProtectionDetail(repo.BranchProtection)
-				result.Recommendations = append(result.Recommendations, bpDetail.Recommendations...)
+			if !archived {
+				if repo.BranchProtection != nil && repo.BranchProtection.Protected {
+					// Legacy branch protection is present — evaluate it.
+					bpDetail := s.eval.EvaluateBranchProtectionDetail(repo.BranchProtection)
+					result.Recommendations = append(result.Recommendations, bpDetail.Recommendations...)
+				} else if repo.RulesetProtection != nil && repo.RulesetProtection.Protected {
+					// No legacy BP, but ruleset-based protection is present — evaluate it.
+					rsDetail := s.eval.EvaluateRulesetProtection(repo.RulesetProtection)
+					if rsDetail != nil {
+						result.Recommendations = append(result.Recommendations, rsDetail.Recommendations...)
+					}
+				} else if repo.BranchProtection != nil {
+					// No legacy BP and no rulesets — flag as unprotected.
+					bpDetail := s.eval.EvaluateBranchProtectionDetail(repo.BranchProtection)
+					result.Recommendations = append(result.Recommendations, bpDetail.Recommendations...)
+				}
 			}
 
 			// Recalculate summary after all findings are merged
