@@ -5,21 +5,22 @@ package scanners
 
 // RepositoryData holds all repository information
 type RepositoryData struct {
-	Organization       string                  `json:"organization,omitempty"`
-	Enterprise         string                  `json:"enterprise,omitempty"`
-	Name               string                  `json:"name,omitempty"`
-	Description        string                  `json:"description,omitempty"`
-	PushedAt           string                  `json:"pushed_at,omitempty"`
-	BasicFeatures      *RepoBasicFeatures      `json:"basic_features,omitempty"`
-	Access             *RepoAccessConfig       `json:"access,omitempty"`
-	Security           *RepoSecurityFeatures   `json:"security,omitempty"`
-	BranchProtection   *BranchProtectionDetail `json:"branch_protection,omitempty"`
-	Metadata           *RepoMetadata           `json:"metadata,omitempty"`
-	Collaborators      []*CollaboratorInfo     `json:"collaborators,omitempty"`
-	DeployKeys         []*DeployKeyInfo        `json:"deploy_keys,omitempty"`
-	DependabotConfig   *DependabotConfigInfo   `json:"dependabot_config,omitempty"`
-	CodeScanningConfig *CodeScanningConfigInfo `json:"code_scanning_config,omitempty"`
-	DiscussionSettings *DiscussionSettings     `json:"discussion_settings,omitempty"`
+	Organization       string                   `json:"organization,omitempty"`
+	Enterprise         string                   `json:"enterprise,omitempty"`
+	Name               string                   `json:"name,omitempty"`
+	Description        string                   `json:"description,omitempty"`
+	PushedAt           string                   `json:"pushed_at,omitempty"`
+	BasicFeatures      *RepoBasicFeatures       `json:"basic_features,omitempty"`
+	Access             *RepoAccessConfig        `json:"access,omitempty"`
+	Security           *RepoSecurityFeatures    `json:"security,omitempty"`
+	BranchProtection   *BranchProtectionDetail  `json:"branch_protection,omitempty"`
+	RulesetProtection  *RulesetProtectionDetail `json:"ruleset_protection,omitempty"`
+	Metadata           *RepoMetadata            `json:"metadata,omitempty"`
+	Collaborators      []*CollaboratorInfo      `json:"collaborators,omitempty"`
+	DeployKeys         []*DeployKeyInfo         `json:"deploy_keys,omitempty"`
+	DependabotConfig   *DependabotConfigInfo    `json:"dependabot_config,omitempty"`
+	CodeScanningConfig *CodeScanningConfigInfo  `json:"code_scanning_config,omitempty"`
+	DiscussionSettings *DiscussionSettings      `json:"discussion_settings,omitempty"`
 }
 
 // RepoBasicFeatures represents basic repository features
@@ -128,4 +129,20 @@ type CodeScanningConfigInfo struct {
 // DiscussionSettings represents discussion settings
 type DiscussionSettings struct {
 	Enabled bool `json:"enabled"`
+}
+
+// RulesetProtectionDetail represents branch protection derived from repository rulesets
+// (REST API: GET /repos/{owner}/{repo}/rules/branches/{branch}).
+// This covers the modern ruleset-based protection that is not visible via the legacy
+// GraphQL branchProtectionRule field.
+type RulesetProtectionDetail struct {
+	Protected                  bool                  `json:"protected"`
+	Branch                     string                `json:"branch"`
+	RequiredPullRequestReviews *RequiredPRReviews    `json:"required_pull_request_reviews,omitempty"`
+	RequiredStatusChecks       *RequiredStatusChecks `json:"required_status_checks,omitempty"`
+	RequiredLinearHistory      bool                  `json:"required_linear_history"`
+	AllowForcePushes           bool                  `json:"allow_force_pushes"`
+	AllowDeletions             bool                  `json:"allow_deletions"`
+	RequiredSignatures         bool                  `json:"required_signatures"`
+	RulesetCount               int                   `json:"ruleset_count"`
 }

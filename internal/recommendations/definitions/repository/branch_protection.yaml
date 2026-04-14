@@ -140,3 +140,14 @@
   learnMore: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches
   tags: [branch_protection, maintenance]
   enabled: true
+
+- id: repo-bp-014
+  scope: repository
+  title: Branch protected by repository rulesets (not legacy branch protection)
+  category: branch_protection
+  severity: info
+  description: The default branch is not protected by a legacy branch protection rule, but is protected by one or more repository rulesets. Rulesets are the recommended mechanism and provide equivalent or better protection.
+  recommendation: No action required. Repository rulesets are the modern, recommended approach. Consider migrating any remaining legacy branch protection rules to rulesets for a unified configuration.
+  learnMore: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets
+  tags: [branch_protection, rulesets]
+  enabled: true

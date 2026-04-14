@@ -84,6 +84,13 @@ func (s *OrgRepositoryScanStage) Execute(ctx *ScanContext) error {
 		}
 
 		wg.Wait()
+
+		// Enrich repos that lack legacy branch protection with ruleset data.
+		// The REST API (GET /repos/{owner}/{repo}/rules/branches/{branch})
+		// detects protection via repository rulesets which are invisible to
+		// the GraphQL branchProtectionRule field.
+		s.enrichWithRulesets(ctx, org)
+
 		log.Info().Str("org", org).Int("scanned", len(names)).Msg("Org repository scan complete")
 	}
 	return nil
@@ -97,4 +104,63 @@ func (s *OrgRepositoryScanStage) Skip(ctx *ScanContext) bool {
 	}
 	log.Debug().Msg("Skipping org-repository scan - no organization results found")
 	return true
+}
+
+// enrichWithRulesets iterates repos belonging to the given org and, for those
+// that have no legacy branch protection, fetches the effective rules from the
+// GraphQL API to detect ruleset-based protection.
+func (s *OrgRepositoryScanStage) enrichWithRulesets(ctx *ScanContext, org string) {
+	if ctx.GitHubRawHTTPClient == nil {
+		return
+	}
+
+	prefix := fmt.Sprintf("repository:%s/", org)
+	var needsEnrichment []string
+	for key, val := range ctx.Results {
+		if !strings.HasPrefix(key, prefix) {
+			continue
+		}
+		repo, ok := val.(*scanners.RepositoryData)
+		if !ok || repo == nil {
+			continue
+		}
+		// Skip archived repos — they are read-only.
+		if repo.Access != nil && repo.Access.Archived {
+			continue
+		}
+		// Only query rulesets when legacy branch protection is absent.
+		if repo.BranchProtection != nil && repo.BranchProtection.Protected {
+			continue
+		}
+		needsEnrichment = append(needsEnrichment, key)
+	}
+
+	if len(needsEnrichment) == 0 {
+		return
+	}
+
+	log.Info().
+		Str("org", org).
+		Int("repos", len(needsEnrichment)).
+		Msg("Enriching repositories with ruleset data via GraphQL")
+
+	for _, key := range needsEnrichment {
+		repo := ctx.Results[key].(*scanners.RepositoryData)
+		branch := ""
+		if repo.Metadata != nil {
+			branch = repo.Metadata.DefaultBranch
+		}
+		if branch == "" {
+			branch = "main"
+		}
+
+		detail := scanners.FetchRulesetProtection(ctx.Ctx, ctx.GitHubRawHTTPClient, org, repo.Name, branch)
+		if detail != nil && detail.Protected {
+			repo.RulesetProtection = detail
+			log.Debug().
+				Str("repo", repo.Name).
+				Int("rulesets", detail.RulesetCount).
+				Msg("Repository protected by rulesets")
+		}
+	}
 }
