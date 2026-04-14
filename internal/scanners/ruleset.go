@@ -88,9 +88,13 @@ type gqlRulesetParameters struct {
 // FetchRulesetProtection queries the GraphQL API for active repository rulesets
 // and converts them into a RulesetProtectionDetail. It uses the raw HTTP client
 // (same auth as batch queries) so it works reliably with all token types.
-func FetchRulesetProtection(ctx context.Context, httpClient *http.Client, owner, repo, branch string) *RulesetProtectionDetail {
+func FetchRulesetProtection(ctx context.Context, httpClient *http.Client, graphqlEndpoint, owner, repo, branch string) *RulesetProtectionDetail {
 	if httpClient == nil || branch == "" {
 		return nil
+	}
+
+	if graphqlEndpoint == "" {
+		graphqlEndpoint = defaultGraphQLEndpoint
 	}
 
 	payload := struct {
@@ -110,7 +114,7 @@ func FetchRulesetProtection(ctx context.Context, httpClient *http.Client, owner,
 		return nil
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, githubGraphQLEndpoint, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, graphqlEndpoint, bytes.NewReader(body))
 	if err != nil {
 		log.Debug().Err(err).Msg("Failed to create rulesets request")
 		return nil

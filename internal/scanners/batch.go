@@ -16,7 +16,7 @@ import (
 	"github.com/shurcooL/githubv4"
 )
 
-const githubGraphQLEndpoint = "https://api.github.com/graphql"
+const defaultGraphQLEndpoint = "https://api.github.com/graphql"
 
 // BatchSize is the number of repositories fetched per batch GraphQL request.
 // Kept small (5) to stay within GitHub's query-complexity resource limits;
@@ -210,7 +210,12 @@ func (c *GraphQLClient) FetchRepositoriesBatch(ctx context.Context, owner string
 		return nil, fmt.Errorf("failed to marshal batch query: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, githubGraphQLEndpoint, bytes.NewReader(body))
+	endpoint := c.graphqlEndpoint
+	if endpoint == "" {
+		endpoint = defaultGraphQLEndpoint
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create batch request: %w", err)
 	}

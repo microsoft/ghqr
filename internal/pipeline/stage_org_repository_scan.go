@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/microsoft/ghqr/internal/config"
 	"github.com/microsoft/ghqr/internal/scanners"
 	"github.com/rs/zerolog/log"
 )
@@ -27,7 +28,8 @@ func NewOrgRepositoryScanStage() *OrgRepositoryScanStage {
 }
 
 func (s *OrgRepositoryScanStage) Execute(ctx *ScanContext) error {
-	graphqlClient := scanners.NewGraphQLClient(ctx.GitHubGraphQLClient, ctx.GitHubRawHTTPClient)
+	graphqlEndpoint := config.GraphQLEndpoint(ctx.Params.Hostname)
+	graphqlClient := scanners.NewGraphQLClient(ctx.GitHubGraphQLClient, ctx.GitHubRawHTTPClient, graphqlEndpoint)
 
 	workers := 2
 
@@ -114,6 +116,8 @@ func (s *OrgRepositoryScanStage) enrichWithRulesets(ctx *ScanContext, org string
 		return
 	}
 
+	graphqlEndpoint := config.GraphQLEndpoint(ctx.Params.Hostname)
+
 	prefix := fmt.Sprintf("repository:%s/", org)
 	var needsEnrichment []string
 	for key, val := range ctx.Results {
@@ -154,7 +158,7 @@ func (s *OrgRepositoryScanStage) enrichWithRulesets(ctx *ScanContext, org string
 			branch = "main"
 		}
 
-		detail := scanners.FetchRulesetProtection(ctx.Ctx, ctx.GitHubRawHTTPClient, org, repo.Name, branch)
+		detail := scanners.FetchRulesetProtection(ctx.Ctx, ctx.GitHubRawHTTPClient, graphqlEndpoint, org, repo.Name, branch)
 		if detail != nil && detail.Protected {
 			repo.RulesetProtection = detail
 			log.Debug().

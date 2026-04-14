@@ -4,6 +4,8 @@
 package commands
 
 import (
+	"os"
+
 	"github.com/microsoft/ghqr/internal/models"
 	"github.com/microsoft/ghqr/internal/pipeline"
 
@@ -16,6 +18,7 @@ func init() {
 	scanCmd.PersistentFlags().StringArrayP("organization", "o", []string{}, "GitHub Organization(s) to scan (can be specified multiple times)")
 	scanCmd.PersistentFlags().StringArrayP("repository", "r", []string{}, "GitHub Repository (owner/repo)")
 	scanCmd.PersistentFlags().StringP("output-name", "n", "", "Output file name without extension")
+	scanCmd.PersistentFlags().StringP("hostname", "H", "", "GitHub hostname (e.g. mycompany.ghe.com for Data Residency). Defaults to github.com. Also reads GH_HOST env var")
 	scanCmd.PersistentFlags().Bool("xlsx", true, "Create Excel (.xlsx) report")
 	scanCmd.PersistentFlags().Bool("markdown", true, "Create Markdown (.md) executive report")
 
@@ -52,11 +55,17 @@ Examples:
 }
 
 func scan(cmd *cobra.Command) {
+	hostname := getString(cmd, "hostname")
+	if hostname == "" {
+		hostname = os.Getenv("GH_HOST")
+	}
+
 	params := models.ScanParams{
 		Enterprises:   getStringArray(cmd, "enterprise"),
 		Organizations: getStringArray(cmd, "organization"),
 		Repositories:  getStringArray(cmd, "repository"),
 		OutputName:    getString(cmd, "output-name"),
+		Hostname:      hostname,
 		Debug:         getBool(cmd, "debug"),
 		Xlsx:          getBool(cmd, "xlsx"),
 		Markdown:      getBool(cmd, "markdown"),
