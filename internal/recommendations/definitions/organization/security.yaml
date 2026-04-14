@@ -9,6 +9,17 @@
   tags: [security, authentication]
   enabled: true
 
+- id: org-sec-001-emu
+  scope: organization
+  title: "EMU enabled: two-factor authentication is controlled by your identity provider"
+  category: security
+  severity: info
+  description: This organization belongs to an Enterprise Managed Users (EMU) enterprise. GitHub's organization-level 2FA setting does not apply because all authentication, including multi-factor authentication, is managed by the external identity provider (e.g. Microsoft Entra ID).
+  recommendation: Ensure MFA is enforced in your identity provider. For Microsoft Entra ID, configure a Conditional Access policy requiring MFA for all users.
+  learnMore: https://learn.microsoft.com/en-us/entra/identity/authentication/howto-mfa-getstarted
+  tags: [security, authentication, emu]
+  enabled: true
+
 - id: org-sec-002
   scope: organization
   title: Web commit signoff not required

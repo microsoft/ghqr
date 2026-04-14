@@ -11,19 +11,22 @@ import (
 
 	"github.com/google/go-github/v83/github"
 	"github.com/rs/zerolog/log"
+	"github.com/shurcooL/githubv4"
 )
 
 // OrganizationScanner handles scanning organization-level data
 type OrganizationScanner struct {
-	client *github.Client
-	org    string
+	client        *github.Client
+	graphqlClient *githubv4.Client
+	org           string
 }
 
 // NewOrganizationScanner creates a new organization scanner
-func NewOrganizationScanner(client *github.Client, org string) *OrganizationScanner {
+func NewOrganizationScanner(client *github.Client, graphqlClient *githubv4.Client, org string) *OrganizationScanner {
 	return &OrganizationScanner{
-		client: client,
-		org:    org,
+		client:        client,
+		graphqlClient: graphqlClient,
+		org:           org,
 	}
 }
 
@@ -206,6 +209,64 @@ func (o *OrganizationScanner) scanSecurityManagers(ctx context.Context) (*OrgSec
 	return &OrgSecurityManagers{HasSecurityManager: len(teams) > 0}, nil
 }
 
+// checkEMUStatus checks whether the organization belongs to an EMU enterprise.
+// It first attempts a GraphQL query against the enterprise's SAML identity provider
+// (requires admin:enterprise scope). If that fails or returns no data, it falls
+// back to probing the REST external-groups endpoint which is only available for
+// EMU organizations and requires only read:org scope.
+func (o *OrganizationScanner) checkEMUStatus(ctx context.Context) (bool, error) {
+	// Attempt 1: GraphQL enterprise SAML IdP (works if token has enterprise admin scope).
+	if o.graphqlClient != nil {
+		log.Debug().Str("organization", o.org).Msg("Checking EMU status via GraphQL")
+
+		var query struct {
+			Organization struct {
+				Enterprise *struct {
+					OwnerInfo struct {
+						SamlIdentityProvider *struct {
+							ID githubv4.ID
+						}
+					}
+				}
+			} `graphql:"organization(login: $login)"`
+		}
+
+		variables := map[string]interface{}{
+			"login": githubv4.String(o.org),
+		}
+
+		if err := o.graphqlClient.Query(ctx, &query, variables); err == nil {
+			if query.Organization.Enterprise != nil &&
+				query.Organization.Enterprise.OwnerInfo.SamlIdentityProvider != nil {
+				log.Info().Str("organization", o.org).Msg("Enterprise Managed Users (EMU) detected via GraphQL")
+				return true, nil
+			}
+		} else {
+			log.Debug().Err(err).Str("organization", o.org).
+				Msg("GraphQL EMU check failed (may require admin:enterprise scope), trying REST fallback")
+		}
+	}
+
+	// Attempt 2: REST external-groups endpoint (only exists for EMU orgs, needs read:org).
+	log.Debug().Str("organization", o.org).Msg("Checking EMU status via REST external-groups")
+	u := fmt.Sprintf("orgs/%s/external-groups", o.org)
+	req, err := o.client.NewRequest("GET", u, nil)
+	if err != nil {
+		return false, nil
+	}
+	resp, err := o.client.Do(ctx, req, nil)
+	if err == nil && resp.StatusCode == http.StatusOK {
+		log.Info().Str("organization", o.org).Msg("Enterprise Managed Users (EMU) detected via external-groups")
+		return true, nil
+	}
+	if resp != nil {
+		log.Debug().Int("status", resp.StatusCode).Str("organization", o.org).
+			Msg("External-groups not available (org is not EMU)")
+	}
+
+	return false, nil
+}
+
 // ScanAll retrieves organization settings and Copilot info.
 func (o *OrganizationScanner) ScanAll(ctx context.Context) (*OrganizationData, error) {
 	log.Info().Str("organization", o.org).Msg("Starting organization scan")
@@ -217,6 +278,13 @@ func (o *OrganizationScanner) ScanAll(ctx context.Context) (*OrganizationData, e
 		return nil, fmt.Errorf("failed to get organization: %w", err)
 	}
 	data.Settings = o.extractSettings(org)
+
+	emuEnabled, err := o.checkEMUStatus(ctx)
+	if err != nil {
+		log.Warn().Err(err).Str("organization", o.org).Msg("Failed to check EMU status")
+	} else {
+		data.Settings.Security.EMUEnabled = emuEnabled
+	}
 
 	copilot, err := o.scanCopilot(ctx)
 	if err != nil {

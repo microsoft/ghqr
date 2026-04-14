@@ -69,7 +69,11 @@ func buildOrganizationsTable(results map[string]interface{}) [][]string {
 		if s := orgData.Settings; s != nil {
 			defaultRepoPerm = s.Visibility.DefaultRepositoryPermission
 			membersCanCreatePublic = boolStr(s.Visibility.MembersCanCreatePublicRepositories)
-			twoFA = boolStr(s.Security.TwoFactorRequirementEnabled)
+			if s.Security.EMUEnabled {
+				twoFA = "IdP (EMU)"
+			} else {
+				twoFA = boolStr(s.Security.TwoFactorRequirementEnabled)
+			}
 			webCommitSignoff = boolStr(s.Security.WebCommitSignoffRequired)
 			advSecNewRepos = boolStr(s.Security.AdvancedSecurityForNewRepos)
 			dependabotAlertsNewRepos = boolStr(s.Security.DependabotAlertsForNewRepos)

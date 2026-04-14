@@ -29,6 +29,9 @@ type OrgVisibility struct {
 type OrgSecurity struct {
 	TwoFactorRequirementEnabled bool `json:"two_factor_requirement_enabled"`
 	WebCommitSignoffRequired    bool `json:"web_commit_signoff_required"`
+	// EMUEnabled is true when the parent enterprise uses Enterprise Managed Users.
+	// When EMU is active, 2FA is managed by the identity provider, not GitHub.
+	EMUEnabled bool `json:"emu_enabled"`
 
 	// Org-wide defaults applied to new repositories
 	AdvancedSecurityForNewRepos             bool `json:"advanced_security_enabled_for_new_repos"`

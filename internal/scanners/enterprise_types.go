@@ -33,6 +33,9 @@ type EnterpriseSettings struct {
 	URL         string `json:"url,omitempty"`
 	WebsiteURL  string `json:"website_url,omitempty"`
 	CreatedAt   string `json:"created_at,omitempty"`
+	// EMUEnabled is true when the enterprise uses Enterprise Managed Users.
+	// When EMU is active, authentication (including 2FA) is managed by the IdP.
+	EMUEnabled bool `json:"emu_enabled"`
 }
 
 // EnterpriseAuditLogData holds a summary of recent audit log events.

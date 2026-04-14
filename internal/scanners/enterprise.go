@@ -65,6 +65,41 @@ func (e *EnterpriseScanner) getSettings(ctx context.Context) (*EnterpriseSetting
 	}, nil
 }
 
+// getEMUStatus checks whether the enterprise uses Enterprise Managed Users (EMU)
+// by querying the enterprise-level SAML identity provider via GraphQL.
+// When a SAML IdP is configured at the enterprise level, the enterprise is EMU-enabled
+// and authentication (including 2FA) is managed by the external identity provider.
+// Returns false (no error) if the query fails due to insufficient permissions.
+func (e *EnterpriseScanner) getEMUStatus(ctx context.Context) (bool, error) {
+	log.Debug().Str("enterprise", e.enterprise).Msg("Checking enterprise EMU status via GraphQL")
+
+	var query struct {
+		Enterprise struct {
+			OwnerInfo struct {
+				SamlIdentityProvider *struct {
+					ID githubv4.ID
+				}
+			}
+		} `graphql:"enterprise(slug: $slug)"`
+	}
+
+	variables := map[string]interface{}{
+		"slug": githubv4.String(e.enterprise),
+	}
+
+	if err := e.graphqlClient.Query(ctx, &query, variables); err != nil {
+		log.Debug().Err(err).Str("enterprise", e.enterprise).
+			Msg("Failed to query enterprise EMU status (may require admin:enterprise scope)")
+		return false, nil
+	}
+
+	emuEnabled := query.Enterprise.OwnerInfo.SamlIdentityProvider != nil
+	if emuEnabled {
+		log.Info().Str("enterprise", e.enterprise).Msg("Enterprise Managed Users (EMU) detected")
+	}
+	return emuEnabled, nil
+}
+
 // getOrganizations retrieves all organizations in the enterprise via GraphQL, paginating
 // through all pages so enterprises with >100 orgs are fully discovered.
 func (e *EnterpriseScanner) getOrganizations(ctx context.Context) ([]*github.Organization, error) {
@@ -312,6 +347,13 @@ func (e *EnterpriseScanner) ScanAll(ctx context.Context) (*EnterpriseData, error
 		return nil, err
 	}
 	data.Settings = settings
+
+	emuEnabled, err := e.getEMUStatus(ctx)
+	if err != nil {
+		log.Warn().Err(err).Str("enterprise", e.enterprise).Msg("Failed to check EMU status")
+	} else if data.Settings != nil {
+		data.Settings.EMUEnabled = emuEnabled
+	}
 
 	orgs, err := e.getOrganizations(ctx)
 	if err != nil {
