@@ -19,7 +19,9 @@ import (
 // GitHubClients creates and returns a configured HTTP client and GraphQL client that share
 // the same authentication and rate-limit retry transport.
 // Use the returned *http.Client for raw HTTP requests (e.g. batch GraphQL queries).
-func GitHubClients(ctx context.Context) (*http.Client, *githubv4.Client) {
+// hostname is the GitHub hostname (e.g. "mycompany.ghe.com" for Data Residency).
+// Pass "" or "github.com" for standard GitHub.com.
+func GitHubClients(ctx context.Context, hostname string) (*http.Client, *githubv4.Client) {
 	token := os.Getenv("GITHUB_TOKEN")
 	if token == "" {
 		token = os.Getenv("GH_TOKEN")
@@ -36,7 +38,34 @@ func GitHubClients(ctx context.Context) (*http.Client, *githubv4.Client) {
 	httpClient := &http.Client{
 		Transport: &rateLimitTransport{wrapped: oauthTransport},
 	}
+
+	if IsCustomHost(hostname) {
+		graphqlURL := "https://api." + hostname + "/graphql"
+		return httpClient, githubv4.NewEnterpriseClient(graphqlURL, httpClient)
+	}
 	return httpClient, githubv4.NewClient(httpClient)
+}
+
+// IsCustomHost returns true when the hostname refers to a non-default GitHub instance
+// (e.g. a GHE.com Data Residency subdomain).
+func IsCustomHost(hostname string) bool {
+	return hostname != "" && hostname != "github.com"
+}
+
+// GraphQLEndpoint returns the GraphQL API endpoint for the given hostname.
+func GraphQLEndpoint(hostname string) string {
+	if IsCustomHost(hostname) {
+		return "https://api." + hostname + "/graphql"
+	}
+	return "https://api.github.com/graphql"
+}
+
+// RESTBaseURL returns the REST API base URL for the given hostname.
+func RESTBaseURL(hostname string) string {
+	if IsCustomHost(hostname) {
+		return "https://api." + hostname + "/"
+	}
+	return "https://api.github.com/"
 }
 
 // rateLimitTransport retries requests that hit GitHub rate limits.

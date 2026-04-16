@@ -98,12 +98,23 @@ ghqr scan -e my-enterprise
 | `read:user` | Read user information |
 | `copilot` | Read Copilot seat and policy information |
 
+### GitHub Enterprise Cloud with Data Residency (GHE.com)
+
+If your organization uses [GitHub Enterprise Cloud with data residency](https://docs.github.com/en/enterprise-cloud@latest/admin/data-residency/about-github-enterprise-cloud-with-data-residency), your API endpoints are on a custom `ghe.com` subdomain instead of `github.com`.
+
+Specify your hostname using either:
+
+- The `--hostname` / `-H` flag: `ghqr scan -o my-org -H mycompany.ghe.com`
+- The `GH_HOST` environment variable: `export GH_HOST=mycompany.ghe.com`
+
 ### Running Scans
 
 ```bash
 # Scan a single organization
 ghqr scan
 ```
+
+For GitHub Enterprise Cloud with Data Residency, see [Data Residency](#github-enterprise-cloud-with-data-residency-ghecom).
 
 Run `ghqr -h` for all available commands and options.
 
@@ -163,6 +174,7 @@ If you receive `401 Unauthorized` or `403 Forbidden` errors:
 1. Verify your `GITHUB_TOKEN` is set and valid
 2. Check that your token has the required scopes (see [Required Token Scopes](#required-token-scopes))
 3. For enterprise resources, ensure your token has `read:enterprise` scope and that SSO is authorized for the enterprise
+4. If using GitHub Enterprise Cloud with Data Residency (GHE.com), ensure you pass `--hostname` or set `GH_HOST` (see [Data Residency](#github-enterprise-cloud-with-data-residency-ghecom))
 
 ### Rate Limiting
 

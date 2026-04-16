@@ -11,17 +11,20 @@ import (
 // httpClient is the underlying HTTP client used by the githubv4 client;
 // it is reused for batch queries that require raw HTTP POST requests.
 type GraphQLClient struct {
-	client     *githubv4.Client
-	httpClient *http.Client
+	client          *githubv4.Client
+	httpClient      *http.Client
+	graphqlEndpoint string
 }
 
 // NewGraphQLClient creates a new GraphQL client wrapper.
 // httpClient should be the same HTTP client used to create the githubv4 client
 // so that authentication and rate-limit retry logic are shared.
-func NewGraphQLClient(client *githubv4.Client, httpClient *http.Client) *GraphQLClient {
+// graphqlEndpoint is the GraphQL API URL (e.g. "https://api.github.com/graphql").
+func NewGraphQLClient(client *githubv4.Client, httpClient *http.Client, graphqlEndpoint string) *GraphQLClient {
 	return &GraphQLClient{
-		client:     client,
-		httpClient: httpClient,
+		client:          client,
+		httpClient:      httpClient,
+		graphqlEndpoint: graphqlEndpoint,
 	}
 }
 

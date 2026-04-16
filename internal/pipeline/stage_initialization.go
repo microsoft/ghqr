@@ -6,6 +6,7 @@ package pipeline
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/google/go-github/v83/github"
@@ -33,14 +34,22 @@ func (s *InitializationStage) Execute(ctx *ScanContext) error {
 		return fmt.Errorf("GitHub token not found: set GH_TOKEN or GITHUB_TOKEN environment variable")
 	}
 
+	hostname := ctx.Params.Hostname
+
 	// Create REST API client
 	httpClient := &http.Client{
 		Transport: &tokenTransport{token: token},
 	}
 	ctx.GitHubClient = github.NewClient(httpClient)
 
+	if config.IsCustomHost(hostname) {
+		baseURL, _ := url.Parse(config.RESTBaseURL(hostname))
+		ctx.GitHubClient.BaseURL = baseURL
+		log.Info().Str("hostname", hostname).Msg("Using custom GitHub hostname")
+	}
+
 	// Create GraphQL client (and keep the underlying HTTP client for batch queries).
-	ctx.GitHubRawHTTPClient, ctx.GitHubGraphQLClient = config.GitHubClients(ctx.Ctx)
+	ctx.GitHubRawHTTPClient, ctx.GitHubGraphQLClient = config.GitHubClients(ctx.Ctx, hostname)
 
 	user, _, err := ctx.GitHubClient.Users.Get(ctx.Ctx, "")
 	if err != nil {

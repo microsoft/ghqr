@@ -8,6 +8,7 @@ type ScanParams struct {
 	Organizations []string
 	Repositories  []string
 	OutputName    string
+	Hostname      string
 	Debug         bool
 	Xlsx          bool
 	Markdown      bool
