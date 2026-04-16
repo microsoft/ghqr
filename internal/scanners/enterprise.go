@@ -66,8 +66,8 @@ func (e *EnterpriseScanner) getSettings(ctx context.Context) (*EnterpriseSetting
 }
 
 // getEMUStatus checks whether the enterprise uses Enterprise Managed Users (EMU)
-// by querying the enterprise-level SAML identity provider via GraphQL.
-// When a SAML IdP is configured at the enterprise level, the enterprise is EMU-enabled
+// by querying the enterprise-level identity provider via GraphQL.
+// When an IdP is configured at the enterprise level, the enterprise is EMU-enabled
 // and authentication (including 2FA) is managed by the external identity provider.
 // Returns false (no error) if the query fails due to insufficient permissions.
 func (e *EnterpriseScanner) getEMUStatus(ctx context.Context) (bool, error) {
@@ -76,9 +76,10 @@ func (e *EnterpriseScanner) getEMUStatus(ctx context.Context) (bool, error) {
 	var query struct {
 		Enterprise struct {
 			OwnerInfo struct {
-				SamlIdentityProvider *struct {
+				// IdentityProvider is non-nil for any enterprise-level IdP (SAML or OIDC); the GraphQL field name "samlIdentityProvider" is a historical misnomer.
+				IdentityProvider *struct {
 					ID githubv4.ID
-				}
+				} `graphql:"samlIdentityProvider"`
 			}
 		} `graphql:"enterprise(slug: $slug)"`
 	}
@@ -93,7 +94,7 @@ func (e *EnterpriseScanner) getEMUStatus(ctx context.Context) (bool, error) {
 		return false, nil
 	}
 
-	emuEnabled := query.Enterprise.OwnerInfo.SamlIdentityProvider != nil
+	emuEnabled := query.Enterprise.OwnerInfo.IdentityProvider != nil
 	if emuEnabled {
 		log.Info().Str("enterprise", e.enterprise).Msg("Enterprise Managed Users (EMU) detected")
 	}

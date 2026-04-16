@@ -210,12 +210,12 @@ func (o *OrganizationScanner) scanSecurityManagers(ctx context.Context) (*OrgSec
 }
 
 // checkEMUStatus checks whether the organization belongs to an EMU enterprise.
-// It first attempts a GraphQL query against the enterprise's SAML identity provider
+// It first attempts a GraphQL query against the enterprise's identity provider
 // (requires admin:enterprise scope). If that fails or returns no data, it falls
 // back to probing the REST external-groups endpoint which is only available for
 // EMU organizations and requires only read:org scope.
 func (o *OrganizationScanner) checkEMUStatus(ctx context.Context) (bool, error) {
-	// Attempt 1: GraphQL enterprise SAML IdP (works if token has enterprise admin scope).
+	// Attempt 1: GraphQL enterprise IdP (works if token has enterprise admin scope).
 	if o.graphqlClient != nil {
 		log.Debug().Str("organization", o.org).Msg("Checking EMU status via GraphQL")
 
@@ -223,9 +223,10 @@ func (o *OrganizationScanner) checkEMUStatus(ctx context.Context) (bool, error) 
 			Organization struct {
 				Enterprise *struct {
 					OwnerInfo struct {
-						SamlIdentityProvider *struct {
+						// IdentityProvider is non-nil for any enterprise-level IdP (SAML or OIDC); the GraphQL field name "samlIdentityProvider" is a historical misnomer.
+						IdentityProvider *struct {
 							ID githubv4.ID
-						}
+						} `graphql:"samlIdentityProvider"`
 					}
 				}
 			} `graphql:"organization(login: $login)"`
@@ -237,7 +238,7 @@ func (o *OrganizationScanner) checkEMUStatus(ctx context.Context) (bool, error) 
 
 		if err := o.graphqlClient.Query(ctx, &query, variables); err == nil {
 			if query.Organization.Enterprise != nil &&
-				query.Organization.Enterprise.OwnerInfo.SamlIdentityProvider != nil {
+				query.Organization.Enterprise.OwnerInfo.IdentityProvider != nil {
 				log.Info().Str("organization", o.org).Msg("Enterprise Managed Users (EMU) detected via GraphQL")
 				return true, nil
 			}
