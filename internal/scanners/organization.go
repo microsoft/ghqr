@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/google/go-github/v83/github"
 	"github.com/rs/zerolog/log"
@@ -269,48 +270,91 @@ func (o *OrganizationScanner) checkEMUStatus(ctx context.Context) (bool, error) 
 }
 
 // ScanAll retrieves organization settings and Copilot info.
+// Independent sub-scans run concurrently to minimize wall-clock time.
 func (o *OrganizationScanner) ScanAll(ctx context.Context) (*OrganizationData, error) {
 	log.Info().Str("organization", o.org).Msg("Starting organization scan")
 
 	data := &OrganizationData{}
 
+	// Organizations.Get must complete first — extractSettings depends on the result.
 	org, _, err := o.client.Organizations.Get(ctx, o.org)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get organization: %w", err)
 	}
 	data.Settings = o.extractSettings(org)
 
-	emuEnabled, err := o.checkEMUStatus(ctx)
-	if err != nil {
-		log.Warn().Err(err).Str("organization", o.org).Msg("Failed to check EMU status")
+	// All remaining sub-scans are independent of each other; run them concurrently.
+	var wg sync.WaitGroup
+
+	var emuEnabled bool
+	var emuErr error
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		emuEnabled, emuErr = o.checkEMUStatus(ctx)
+	}()
+
+	var copilot *OrgCopilotData
+	var copilotErr error
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		copilot, copilotErr = o.scanCopilot(ctx)
+	}()
+
+	var actionsPerms *OrgActionsPermissions
+	var actionsErr error
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		actionsPerms, actionsErr = o.scanActionsPermissions(ctx)
+	}()
+
+	var secAlerts *OrgSecurityAlerts
+	var secAlertsErr error
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		secAlerts, secAlertsErr = o.scanSecurityAlerts(ctx)
+	}()
+
+	var secMgrs *OrgSecurityManagers
+	var secMgrsErr error
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		secMgrs, secMgrsErr = o.scanSecurityManagers(ctx)
+	}()
+
+	wg.Wait()
+
+	// Collect results — warn on errors, never fail the whole scan.
+	if emuErr != nil {
+		log.Warn().Err(emuErr).Str("organization", o.org).Msg("Failed to check EMU status")
 	} else {
 		data.Settings.Security.EMUEnabled = emuEnabled
 	}
 
-	copilot, err := o.scanCopilot(ctx)
-	if err != nil {
-		log.Warn().Err(err).Str("organization", o.org).Msg("Failed to scan Copilot settings")
+	if copilotErr != nil {
+		log.Warn().Err(copilotErr).Str("organization", o.org).Msg("Failed to scan Copilot settings")
 	} else {
 		data.Copilot = copilot
 	}
 
-	actionsPerms, err := o.scanActionsPermissions(ctx)
-	if err != nil {
-		log.Warn().Err(err).Str("organization", o.org).Msg("Failed to scan Actions permissions")
+	if actionsErr != nil {
+		log.Warn().Err(actionsErr).Str("organization", o.org).Msg("Failed to scan Actions permissions")
 	} else {
 		data.ActionsPermissions = actionsPerms
 	}
 
-	secAlerts, err := o.scanSecurityAlerts(ctx)
-	if err != nil {
-		log.Warn().Err(err).Str("organization", o.org).Msg("Failed to scan security alerts")
+	if secAlertsErr != nil {
+		log.Warn().Err(secAlertsErr).Str("organization", o.org).Msg("Failed to scan security alerts")
 	} else {
 		data.SecurityAlerts = secAlerts
 	}
 
-	secMgrs, err := o.scanSecurityManagers(ctx)
-	if err != nil {
-		log.Warn().Err(err).Str("organization", o.org).Msg("Failed to scan security managers")
+	if secMgrsErr != nil {
+		log.Warn().Err(secMgrsErr).Str("organization", o.org).Msg("Failed to scan security managers")
 	} else {
 		data.SecurityManagers = secMgrs
 	}

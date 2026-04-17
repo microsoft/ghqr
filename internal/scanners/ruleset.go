@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 )
@@ -151,6 +152,183 @@ func FetchRulesetProtection(ctx context.Context, httpClient *http.Client, graphq
 	}
 
 	return parseRulesets(gqlResp.Data.Repository.Rulesets.Nodes, branch)
+}
+
+// RulesetBatchSize is the number of repositories fetched per batch ruleset GraphQL request.
+// The ruleset query is lighter than the full repository query (no file checks, no topics/language),
+// so we can safely alias more repositories per request.
+const RulesetBatchSize = 10
+
+// rulesetFieldsFragment is the GraphQL field selection for rulesets of a single repository alias.
+const rulesetFieldsFragment = `
+    rulesets(first: 25, includeParents: true) {
+      totalCount
+      nodes {
+        name
+        enforcement
+        target
+        rules(first: 30) {
+          nodes {
+            type
+            parameters {
+              ... on PullRequestParameters {
+                requiredApprovingReviewCount
+                dismissStaleReviewsOnPush
+                requireCodeOwnerReview
+              }
+              ... on RequiredStatusChecksParameters {
+                strictRequiredStatusChecksPolicy
+                requiredStatusChecks { context }
+              }
+            }
+          }
+        }
+      }
+    }
+`
+
+// RulesetBatchRepo holds the owner, name, and branch for a single repository in a batch request.
+type RulesetBatchRepo struct {
+	Owner  string
+	Name   string
+	Branch string
+}
+
+// batchRulesetGraphQLResponse is the top-level GraphQL response for batch ruleset queries.
+type batchRulesetGraphQLResponse struct {
+	Data   map[string]json.RawMessage `json:"data"`
+	Errors []struct {
+		Message string `json:"message"`
+	} `json:"errors"`
+}
+
+// batchRulesetRepoData is the JSON shape for one aliased repository in a batch response.
+type batchRulesetRepoData struct {
+	Rulesets struct {
+		TotalCount int `json:"totalCount"`
+		Nodes      []struct {
+			Name        string `json:"name"`
+			Enforcement string `json:"enforcement"`
+			Target      string `json:"target"`
+			Rules       struct {
+				Nodes []struct {
+					Type       string                `json:"type"`
+					Parameters *gqlRulesetParameters `json:"parameters"`
+				} `json:"nodes"`
+			} `json:"rules"`
+		} `json:"nodes"`
+	} `json:"rulesets"`
+}
+
+// FetchRulesetProtectionBatch queries the GraphQL API for rulesets of multiple
+// repositories in a single request using aliases. It returns a map keyed by
+// "owner/name" containing the parsed RulesetProtectionDetail (nil if not protected).
+func FetchRulesetProtectionBatch(ctx context.Context, httpClient *http.Client, graphqlEndpoint string, repos []RulesetBatchRepo) map[string]*RulesetProtectionDetail {
+	if httpClient == nil || len(repos) == 0 {
+		return nil
+	}
+	if graphqlEndpoint == "" {
+		graphqlEndpoint = defaultGraphQLEndpoint
+	}
+
+	// Build a query with one alias per repository.
+	var qb strings.Builder
+	qb.WriteString("query BatchRulesets(")
+	for i := range repos {
+		if i > 0 {
+			qb.WriteString(", ")
+		}
+		fmt.Fprintf(&qb, "$owner%d: String!, $name%d: String!", i, i)
+	}
+	qb.WriteString(") {\n")
+	for i := range repos {
+		fmt.Fprintf(&qb, "  repo%d: repository(owner: $owner%d, name: $name%d) {%s  }\n", i, i, i, rulesetFieldsFragment)
+	}
+	qb.WriteString("}")
+
+	vars := make(map[string]interface{}, len(repos)*2)
+	for i, r := range repos {
+		vars[fmt.Sprintf("owner%d", i)] = r.Owner
+		vars[fmt.Sprintf("name%d", i)] = r.Name
+	}
+
+	payload := struct {
+		Query     string                 `json:"query"`
+		Variables map[string]interface{} `json:"variables"`
+	}{qb.String(), vars}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		log.Debug().Err(err).Msg("Failed to marshal batch rulesets query")
+		return nil
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, graphqlEndpoint, bytes.NewReader(body))
+	if err != nil {
+		log.Debug().Err(err).Msg("Failed to create batch rulesets request")
+		return nil
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		log.Debug().Err(err).Msg("Failed to execute batch rulesets request")
+		return nil
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var gqlResp batchRulesetGraphQLResponse
+	if err := json.NewDecoder(resp.Body).Decode(&gqlResp); err != nil {
+		log.Debug().Err(err).Msg("Failed to decode batch rulesets response")
+		return nil
+	}
+
+	if len(gqlResp.Errors) > 0 {
+		log.Debug().
+			Str("error", gqlResp.Errors[0].Message).
+			Msg("GraphQL batch rulesets query returned errors")
+		return nil
+	}
+
+	results := make(map[string]*RulesetProtectionDetail, len(repos))
+	for i, r := range repos {
+		alias := fmt.Sprintf("repo%d", i)
+		raw, ok := gqlResp.Data[alias]
+		if !ok || string(raw) == "null" {
+			continue
+		}
+		var d batchRulesetRepoData
+		if err := json.Unmarshal(raw, &d); err != nil {
+			log.Debug().Err(err).Str("repo", r.Name).Msg("Failed to decode batch ruleset repo data")
+			continue
+		}
+		detail := parseRulesets(d.Rulesets.Nodes, r.Branch)
+		key := fmt.Sprintf("%s/%s", r.Owner, r.Name)
+		results[key] = detail
+	}
+	return results
+}
+
+// NewRulesetBatchRepo creates a RulesetBatchRepo entry for use with FetchRulesetProtectionBatch.
+func NewRulesetBatchRepo(owner, name, branch string) RulesetBatchRepo {
+	return RulesetBatchRepo{Owner: owner, Name: name, Branch: branch}
+}
+
+// ChunkRulesetBatchRepos splits a slice of RulesetBatchRepo into chunks of at most size n.
+func ChunkRulesetBatchRepos(repos []RulesetBatchRepo, n int) [][]RulesetBatchRepo {
+	if n <= 0 {
+		n = RulesetBatchSize
+	}
+	var chunks [][]RulesetBatchRepo
+	for len(repos) > 0 {
+		end := len(repos)
+		if end > n {
+			end = n
+		}
+		chunks = append(chunks, repos[:end])
+		repos = repos[end:]
+	}
+	return chunks
 }
 
 // parseRulesets converts GraphQL ruleset nodes into RulesetProtectionDetail.

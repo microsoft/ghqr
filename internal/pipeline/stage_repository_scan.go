@@ -6,6 +6,7 @@ package pipeline
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/microsoft/ghqr/internal/config"
 	"github.com/microsoft/ghqr/internal/scanners"
@@ -43,23 +44,43 @@ func (s *RepositoryScanStage) Execute(ctx *ScanContext) error {
 
 	for owner, names := range byOwner {
 		chunks := scanners.ChunkStrings(names, scanners.BatchSize)
+
+		workers := 5
+		var (
+			mu  sync.Mutex
+			wg  sync.WaitGroup
+			sem = make(chan struct{}, workers)
+		)
+
 		for _, chunk := range chunks {
-			log.Info().
-				Str("owner", owner).
-				Strs("repos", chunk).
-				Msg("Fetching repositories via GraphQL")
+			wg.Add(1)
+			chunk := chunk // capture loop variable
+			sem <- struct{}{}
+			go func() {
+				defer wg.Done()
+				defer func() { <-sem }()
 
-			results, err := graphqlClient.FetchRepositoriesBatch(ctx.Ctx, owner, chunk)
-			if err != nil {
-				log.Error().Err(err).Str("owner", owner).Strs("repos", chunk).Msg("Failed to fetch repositories")
-				continue
-			}
+				log.Info().
+					Str("owner", owner).
+					Strs("repos", chunk).
+					Msg("Fetching repositories via GraphQL")
 
-			for name, data := range results {
-				data.Organization = owner
-				ctx.Results[fmt.Sprintf("repository:%s/%s", owner, name)] = data
-			}
+				results, err := graphqlClient.FetchRepositoriesBatch(ctx.Ctx, owner, chunk)
+				if err != nil {
+					log.Error().Err(err).Str("owner", owner).Strs("repos", chunk).Msg("Failed to fetch repositories")
+					return
+				}
+
+				mu.Lock()
+				for name, data := range results {
+					data.Organization = owner
+					ctx.Results[fmt.Sprintf("repository:%s/%s", owner, name)] = data
+				}
+				mu.Unlock()
+			}()
 		}
+
+		wg.Wait()
 
 		// Enrich repos that lack legacy branch protection with ruleset data.
 		s.enrichWithRulesets(ctx, owner)
@@ -73,7 +94,9 @@ func (s *RepositoryScanStage) Execute(ctx *ScanContext) error {
 
 // enrichWithRulesets iterates repos belonging to the given owner and, for those
 // that have no legacy branch protection, fetches the effective rules from the
-// REST API to detect ruleset-based protection.
+// GraphQL API to detect ruleset-based protection.
+// Repositories are batched into a single GraphQL request per chunk to minimize
+// round-trips.
 func (s *RepositoryScanStage) enrichWithRulesets(ctx *ScanContext, owner string) {
 	if ctx.GitHubRawHTTPClient == nil {
 		return
@@ -104,11 +127,8 @@ func (s *RepositoryScanStage) enrichWithRulesets(ctx *ScanContext, owner string)
 		return
 	}
 
-	log.Info().
-		Str("owner", owner).
-		Int("repos", len(needsEnrichment)).
-		Msg("Enriching repositories with ruleset data")
-
+	// Build batch entries.
+	batchRepos := make([]scanners.RulesetBatchRepo, 0, len(needsEnrichment))
 	for _, key := range needsEnrichment {
 		repo := ctx.Results[key].(*scanners.RepositoryData)
 		branch := ""
@@ -118,9 +138,51 @@ func (s *RepositoryScanStage) enrichWithRulesets(ctx *ScanContext, owner string)
 		if branch == "" {
 			branch = "main"
 		}
+		batchRepos = append(batchRepos, scanners.NewRulesetBatchRepo(owner, repo.Name, branch))
+	}
 
-		detail := scanners.FetchRulesetProtection(ctx.Ctx, ctx.GitHubRawHTTPClient, graphqlEndpoint, owner, repo.Name, branch)
-		if detail != nil && detail.Protected {
+	chunks := scanners.ChunkRulesetBatchRepos(batchRepos, scanners.RulesetBatchSize)
+
+	rulesetWorkers := 10
+	log.Info().
+		Str("owner", owner).
+		Int("repos", len(needsEnrichment)).
+		Int("workers", rulesetWorkers).
+		Int("chunks", len(chunks)).
+		Msg("Enriching repositories with ruleset data (batched)")
+
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, rulesetWorkers)
+	var mu sync.Mutex
+	allResults := make(map[string]*scanners.RulesetProtectionDetail)
+
+	for _, chunk := range chunks {
+		wg.Add(1)
+		chunk := chunk // capture loop variable
+		sem <- struct{}{}
+		go func() {
+			defer wg.Done()
+			defer func() { <-sem }()
+
+			results := scanners.FetchRulesetProtectionBatch(ctx.Ctx, ctx.GitHubRawHTTPClient, graphqlEndpoint, chunk)
+			if results == nil {
+				return
+			}
+			mu.Lock()
+			for k, v := range results {
+				allResults[k] = v
+			}
+			mu.Unlock()
+		}()
+	}
+
+	wg.Wait()
+
+	// Apply results to the scan context.
+	for _, key := range needsEnrichment {
+		repo := ctx.Results[key].(*scanners.RepositoryData)
+		lookupKey := fmt.Sprintf("%s/%s", owner, repo.Name)
+		if detail, ok := allResults[lookupKey]; ok && detail != nil && detail.Protected {
 			repo.RulesetProtection = detail
 			log.Debug().
 				Str("repo", repo.Name).

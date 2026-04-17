@@ -31,7 +31,7 @@ func (s *OrgRepositoryScanStage) Execute(ctx *ScanContext) error {
 	graphqlEndpoint := config.GraphQLEndpoint(ctx.Params.Hostname)
 	graphqlClient := scanners.NewGraphQLClient(ctx.GitHubGraphQLClient, ctx.GitHubRawHTTPClient, graphqlEndpoint)
 
-	workers := 2
+	workers := 5
 
 	for key := range ctx.Results {
 		if !strings.HasPrefix(key, "organization:") {
@@ -111,6 +111,8 @@ func (s *OrgRepositoryScanStage) Skip(ctx *ScanContext) bool {
 // enrichWithRulesets iterates repos belonging to the given org and, for those
 // that have no legacy branch protection, fetches the effective rules from the
 // GraphQL API to detect ruleset-based protection.
+// Repositories are batched into a single GraphQL request per chunk to minimize
+// round-trips.
 func (s *OrgRepositoryScanStage) enrichWithRulesets(ctx *ScanContext, org string) {
 	if ctx.GitHubRawHTTPClient == nil {
 		return
@@ -143,11 +145,8 @@ func (s *OrgRepositoryScanStage) enrichWithRulesets(ctx *ScanContext, org string
 		return
 	}
 
-	log.Info().
-		Str("org", org).
-		Int("repos", len(needsEnrichment)).
-		Msg("Enriching repositories with ruleset data via GraphQL")
-
+	// Build batch entries.
+	batchRepos := make([]scanners.RulesetBatchRepo, 0, len(needsEnrichment))
 	for _, key := range needsEnrichment {
 		repo := ctx.Results[key].(*scanners.RepositoryData)
 		branch := ""
@@ -157,9 +156,51 @@ func (s *OrgRepositoryScanStage) enrichWithRulesets(ctx *ScanContext, org string
 		if branch == "" {
 			branch = "main"
 		}
+		batchRepos = append(batchRepos, scanners.NewRulesetBatchRepo(org, repo.Name, branch))
+	}
 
-		detail := scanners.FetchRulesetProtection(ctx.Ctx, ctx.GitHubRawHTTPClient, graphqlEndpoint, org, repo.Name, branch)
-		if detail != nil && detail.Protected {
+	chunks := scanners.ChunkRulesetBatchRepos(batchRepos, scanners.RulesetBatchSize)
+
+	rulesetWorkers := 10
+	log.Info().
+		Str("org", org).
+		Int("repos", len(needsEnrichment)).
+		Int("workers", rulesetWorkers).
+		Int("chunks", len(chunks)).
+		Msg("Enriching repositories with ruleset data via GraphQL (batched)")
+
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, rulesetWorkers)
+	var mu sync.Mutex
+	allResults := make(map[string]*scanners.RulesetProtectionDetail)
+
+	for _, chunk := range chunks {
+		wg.Add(1)
+		chunk := chunk // capture loop variable
+		sem <- struct{}{}
+		go func() {
+			defer wg.Done()
+			defer func() { <-sem }()
+
+			results := scanners.FetchRulesetProtectionBatch(ctx.Ctx, ctx.GitHubRawHTTPClient, graphqlEndpoint, chunk)
+			if results == nil {
+				return
+			}
+			mu.Lock()
+			for k, v := range results {
+				allResults[k] = v
+			}
+			mu.Unlock()
+		}()
+	}
+
+	wg.Wait()
+
+	// Apply results to the scan context.
+	for _, key := range needsEnrichment {
+		repo := ctx.Results[key].(*scanners.RepositoryData)
+		lookupKey := fmt.Sprintf("%s/%s", org, repo.Name)
+		if detail, ok := allResults[lookupKey]; ok && detail != nil && detail.Protected {
 			repo.RulesetProtection = detail
 			log.Debug().
 				Str("repo", repo.Name).
