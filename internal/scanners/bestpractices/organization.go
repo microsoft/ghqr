@@ -17,7 +17,7 @@ func (e *Evaluator) EvaluateOrganizationSecurity(settings *scanners.OrgSettings)
 
 	if !settings.Security.TwoFactorRequirementEnabled {
 		if settings.Security.EMUEnabled {
-			e.addFinding(&findings, "org-sec-001-emu", "")
+			e.addFinding(&findings, "org-sec-006", "")
 		} else {
 			e.addFinding(&findings, "org-sec-001", "")
 		}
