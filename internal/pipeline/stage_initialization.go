@@ -5,12 +5,9 @@ package pipeline
 
 import (
 	"fmt"
-	"net/http"
-	"net/url"
-	"os"
 
-	"github.com/google/go-github/v83/github"
 	"github.com/microsoft/ghqr/internal/config"
+	"github.com/microsoft/ghqr/internal/scanners"
 	"github.com/rs/zerolog/log"
 )
 
@@ -29,29 +26,18 @@ func NewInitializationStage() *InitializationStage {
 func (s *InitializationStage) Execute(ctx *ScanContext) error {
 	log.Info().Msg("Initializing scan...")
 
-	token := getGitHubToken()
-	if token == "" {
-		return fmt.Errorf("GitHub token not found: set GH_TOKEN or GITHUB_TOKEN environment variable")
-	}
-
 	hostname := ctx.Params.Hostname
 
-	// Create REST API client
-	httpClient := &http.Client{
-		Transport: &tokenTransport{token: token},
+	clients, err := config.NewClients(ctx.Ctx, hostname)
+	if err != nil {
+		return fmt.Errorf("failed to create GitHub clients: %w", err)
 	}
-	ctx.GitHubClient = github.NewClient(httpClient)
+	ctx.Clients = clients
 
-	if config.IsCustomHost(hostname) {
-		baseURL, _ := url.Parse(config.RESTBaseURL(hostname))
-		ctx.GitHubClient.BaseURL = baseURL
-		log.Info().Str("hostname", hostname).Msg("Using custom GitHub hostname")
-	}
+	graphqlEndpoint := config.GraphQLEndpoint(hostname)
+	ctx.GraphQLScanner = scanners.NewGraphQLClient(clients.GraphQL, clients.HTTP, graphqlEndpoint)
 
-	// Create GraphQL client (and keep the underlying HTTP client for batch queries).
-	ctx.GitHubRawHTTPClient, ctx.GitHubGraphQLClient = config.GitHubClients(ctx.Ctx, hostname)
-
-	user, _, err := ctx.GitHubClient.Users.Get(ctx.Ctx, "")
+	user, _, err := ctx.Clients.REST.Users.Get(ctx.Ctx, "")
 	if err != nil {
 		return fmt.Errorf("GitHub authentication failed: %w", err)
 	}
@@ -60,25 +46,6 @@ func (s *InitializationStage) Execute(ctx *ScanContext) error {
 	return nil
 }
 
-// tokenTransport injects the Bearer token into every request.
-type tokenTransport struct {
-	token string
-}
-
-func (t *tokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	req = req.Clone(req.Context())
-	req.Header.Set("Authorization", "Bearer "+t.token)
-	return http.DefaultTransport.RoundTrip(req)
-}
-
 func (s *InitializationStage) Skip(ctx *ScanContext) bool {
 	return false
-}
-
-// getGitHubToken retrieves the GitHub token from environment variables
-func getGitHubToken() string {
-	if token := os.Getenv("GH_TOKEN"); token != "" {
-		return token
-	}
-	return os.Getenv("GITHUB_TOKEN")
 }

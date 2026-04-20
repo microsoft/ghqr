@@ -22,7 +22,7 @@ func NewEnterpriseDiscoveryStage() *EnterpriseDiscoveryStage {
 }
 
 func (s *EnterpriseDiscoveryStage) Execute(ctx *ScanContext) error {
-	if ctx.GitHubGraphQLClient == nil {
+	if ctx.Clients.GraphQL == nil {
 		log.Warn().Msg("GraphQL client not available - skipping enterprise discovery")
 		return nil
 	}
@@ -48,7 +48,7 @@ func (s *EnterpriseDiscoveryStage) Execute(ctx *ScanContext) error {
 		variables := map[string]interface{}{
 			"cursor": cursor,
 		}
-		if err := ctx.GitHubGraphQLClient.Query(ctx.Ctx, &query, variables); err != nil {
+		if err := ctx.Clients.GraphQL.Query(ctx.Ctx, &query, variables); err != nil {
 			log.Warn().Err(err).Msg("Failed to discover enterprises - account may not have enterprise admin access")
 			return nil
 		}

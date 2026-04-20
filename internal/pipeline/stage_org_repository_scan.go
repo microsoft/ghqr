@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/microsoft/ghqr/internal/config"
 	"github.com/microsoft/ghqr/internal/scanners"
 	"github.com/rs/zerolog/log"
 )
@@ -28,8 +27,7 @@ func NewOrgRepositoryScanStage() *OrgRepositoryScanStage {
 }
 
 func (s *OrgRepositoryScanStage) Execute(ctx *ScanContext) error {
-	graphqlEndpoint := config.GraphQLEndpoint(ctx.Params.Hostname)
-	graphqlClient := scanners.NewGraphQLClient(ctx.GitHubGraphQLClient, ctx.GitHubRawHTTPClient, graphqlEndpoint)
+	graphqlClient := ctx.GraphQLScanner
 
 	workers := 5
 
@@ -63,7 +61,6 @@ func (s *OrgRepositoryScanStage) Execute(ctx *ScanContext) error {
 
 		for _, chunk := range chunks {
 			wg.Add(1)
-			chunk := chunk // capture loop variable
 			sem <- struct{}{}
 			go func() {
 				defer wg.Done()
@@ -114,11 +111,9 @@ func (s *OrgRepositoryScanStage) Skip(ctx *ScanContext) bool {
 // Repositories are batched into a single GraphQL request per chunk to minimize
 // round-trips.
 func (s *OrgRepositoryScanStage) enrichWithRulesets(ctx *ScanContext, org string) {
-	if ctx.GitHubRawHTTPClient == nil {
+	if ctx.Clients == nil {
 		return
 	}
-
-	graphqlEndpoint := config.GraphQLEndpoint(ctx.Params.Hostname)
 
 	prefix := fmt.Sprintf("repository:%s/", org)
 	var needsEnrichment []string
@@ -153,9 +148,6 @@ func (s *OrgRepositoryScanStage) enrichWithRulesets(ctx *ScanContext, org string
 		if repo.Metadata != nil && repo.Metadata.DefaultBranch != "" {
 			branch = repo.Metadata.DefaultBranch
 		}
-		if branch == "" {
-			branch = "main"
-		}
 		batchRepos = append(batchRepos, scanners.NewRulesetBatchRepo(org, repo.Name, branch))
 	}
 
@@ -176,13 +168,12 @@ func (s *OrgRepositoryScanStage) enrichWithRulesets(ctx *ScanContext, org string
 
 	for _, chunk := range chunks {
 		wg.Add(1)
-		chunk := chunk // capture loop variable
 		sem <- struct{}{}
 		go func() {
 			defer wg.Done()
 			defer func() { <-sem }()
 
-			results := scanners.FetchRulesetProtectionBatch(ctx.Ctx, ctx.GitHubRawHTTPClient, graphqlEndpoint, chunk)
+			results := scanners.FetchRulesetProtectionBatch(ctx.Ctx, ctx.Clients.HTTP, ctx.GraphQLScanner.Endpoint(), chunk)
 			if results == nil {
 				return
 			}

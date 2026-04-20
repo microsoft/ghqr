@@ -27,7 +27,7 @@ func (s *OrganizationDiscoveryStage) Execute(ctx *ScanContext) error {
 	var orgs []*github.Organization
 	opts := &github.ListOptions{PerPage: 100}
 	for {
-		page, resp, err := ctx.GitHubClient.Organizations.List(ctx.Ctx, "", opts)
+		page, resp, err := ctx.Clients.REST.Organizations.List(ctx.Ctx, "", opts)
 		if err != nil {
 			return err
 		}
