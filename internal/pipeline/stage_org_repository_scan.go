@@ -150,12 +150,9 @@ func (s *OrgRepositoryScanStage) enrichWithRulesets(ctx *ScanContext, org string
 
 	for _, key := range needsEnrichment {
 		repo := ctx.Results[key].(*scanners.RepositoryData)
-		branch := ""
-		if repo.Metadata != nil {
+		branch := "main"
+		if repo.Metadata != nil && repo.Metadata.DefaultBranch != "" {
 			branch = repo.Metadata.DefaultBranch
-		}
-		if branch == "" {
-			branch = "main"
 		}
 
 		detail := scanners.FetchRulesetProtection(ctx.Ctx, ctx.GitHubRawHTTPClient, graphqlEndpoint, org, repo.Name, branch)
