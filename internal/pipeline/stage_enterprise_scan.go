@@ -49,7 +49,7 @@ func (s *EnterpriseScanStage) Execute(ctx *ScanContext) error {
 func (s *EnterpriseScanStage) scanEnterprise(ctx *ScanContext, enterprise string) error {
 	log.Info().Str("enterprise", enterprise).Msg("Scanning enterprise")
 
-	scanner := scanners.NewEnterpriseScanner(ctx.GitHubGraphQLClient, ctx.GitHubClient, enterprise)
+	scanner := scanners.NewEnterpriseScanner(ctx.Clients.GraphQL, ctx.Clients.REST, enterprise)
 	data, err := scanner.ScanAll(ctx.Ctx)
 	if err != nil {
 		return fmt.Errorf("scan failed: %w", err)

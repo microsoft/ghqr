@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/microsoft/ghqr/internal/config"
 	"github.com/microsoft/ghqr/internal/scanners"
 	"github.com/rs/zerolog/log"
 )
@@ -28,9 +27,6 @@ func NewRepositoryScanStage() *RepositoryScanStage {
 
 // Execute fetches and stores data for each repository specified via the -r flag.
 func (s *RepositoryScanStage) Execute(ctx *ScanContext) error {
-	graphqlEndpoint := config.GraphQLEndpoint(ctx.Params.Hostname)
-	graphqlClient := scanners.NewGraphQLClient(ctx.GitHubGraphQLClient, ctx.GitHubRawHTTPClient, graphqlEndpoint)
-
 	// Group repositories by owner so we can batch them efficiently.
 	byOwner := make(map[string][]string)
 	for _, repo := range ctx.Params.Repositories {
@@ -54,7 +50,6 @@ func (s *RepositoryScanStage) Execute(ctx *ScanContext) error {
 
 		for _, chunk := range chunks {
 			wg.Add(1)
-			chunk := chunk // capture loop variable
 			sem <- struct{}{}
 			go func() {
 				defer wg.Done()
@@ -65,7 +60,7 @@ func (s *RepositoryScanStage) Execute(ctx *ScanContext) error {
 					Strs("repos", chunk).
 					Msg("Fetching repositories via GraphQL")
 
-				results, err := graphqlClient.FetchRepositoriesBatch(ctx.Ctx, owner, chunk)
+				results, err := ctx.GraphQLScanner.FetchRepositoriesBatch(ctx.Ctx, owner, chunk)
 				if err != nil {
 					log.Error().Err(err).Str("owner", owner).Strs("repos", chunk).Msg("Failed to fetch repositories")
 					return
@@ -98,12 +93,6 @@ func (s *RepositoryScanStage) Execute(ctx *ScanContext) error {
 // Repositories are batched into a single GraphQL request per chunk to minimize
 // round-trips.
 func (s *RepositoryScanStage) enrichWithRulesets(ctx *ScanContext, owner string) {
-	if ctx.GitHubRawHTTPClient == nil {
-		return
-	}
-
-	graphqlEndpoint := config.GraphQLEndpoint(ctx.Params.Hostname)
-
 	prefix := fmt.Sprintf("repository:%s/", owner)
 	var needsEnrichment []string
 	for key, val := range ctx.Results {
@@ -131,12 +120,9 @@ func (s *RepositoryScanStage) enrichWithRulesets(ctx *ScanContext, owner string)
 	batchRepos := make([]scanners.RulesetBatchRepo, 0, len(needsEnrichment))
 	for _, key := range needsEnrichment {
 		repo := ctx.Results[key].(*scanners.RepositoryData)
-		branch := ""
-		if repo.Metadata != nil {
+		branch := "main"
+		if repo.Metadata != nil && repo.Metadata.DefaultBranch != "" {
 			branch = repo.Metadata.DefaultBranch
-		}
-		if branch == "" {
-			branch = "main"
 		}
 		batchRepos = append(batchRepos, scanners.NewRulesetBatchRepo(owner, repo.Name, branch))
 	}
@@ -158,13 +144,12 @@ func (s *RepositoryScanStage) enrichWithRulesets(ctx *ScanContext, owner string)
 
 	for _, chunk := range chunks {
 		wg.Add(1)
-		chunk := chunk // capture loop variable
 		sem <- struct{}{}
 		go func() {
 			defer wg.Done()
 			defer func() { <-sem }()
 
-			results := scanners.FetchRulesetProtectionBatch(ctx.Ctx, ctx.GitHubRawHTTPClient, graphqlEndpoint, chunk)
+			results := scanners.FetchRulesetProtectionBatch(ctx.Ctx, ctx.Clients.HTTP, ctx.GraphQLScanner.Endpoint(), chunk)
 			if results == nil {
 				return
 			}

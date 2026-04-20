@@ -28,6 +28,11 @@ func NewGraphQLClient(client *githubv4.Client, httpClient *http.Client, graphqlE
 	}
 }
 
+// Endpoint returns the GraphQL API URL this client is configured to use.
+func (c *GraphQLClient) Endpoint() string {
+	return c.graphqlEndpoint
+}
+
 // RepositoryNode holds all repository fields fetched from GitHub GraphQL.
 // Used in single-repo queries (RepositoryCoreData).
 type RepositoryNode struct {

@@ -5,29 +5,42 @@ package config
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/google/go-github/v83/github"
 	"github.com/rs/zerolog/log"
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/oauth2"
 )
 
-// GitHubClients creates and returns a configured HTTP client and GraphQL client that share
-// the same authentication and rate-limit retry transport.
-// Use the returned *http.Client for raw HTTP requests (e.g. batch GraphQL queries).
-// hostname is the GitHub hostname (e.g. "mycompany.ghe.com" for Data Residency).
-// Pass "" or "github.com" for standard GitHub.com.
-func GitHubClients(ctx context.Context, hostname string) (*http.Client, *githubv4.Client) {
-	token := os.Getenv("GITHUB_TOKEN")
+// Clients holds the three GitHub API clients that share a single authenticated,
+// rate-limit-aware HTTP transport. Build once via NewClients and reuse everywhere.
+type Clients struct {
+	// HTTP is the shared authenticated transport. Use for raw HTTP calls (e.g. batch GraphQL).
+	HTTP *http.Client
+	// GraphQL is the githubv4 client for typed GraphQL queries.
+	GraphQL *githubv4.Client
+	// REST is the go-github client for REST API calls.
+	REST *github.Client
+}
+
+// NewClients builds all three GitHub API clients from a single oauth2 + rate-limit
+// transport. hostname is the GitHub hostname (e.g. "mycompany.ghe.com" for Data
+// Residency); pass "" or "github.com" for standard GitHub.com.
+// Returns an error when no token is found in GH_TOKEN or GITHUB_TOKEN.
+func NewClients(ctx context.Context, hostname string) (*Clients, error) {
+	token := os.Getenv("GH_TOKEN")
 	if token == "" {
-		token = os.Getenv("GH_TOKEN")
+		token = os.Getenv("GITHUB_TOKEN")
 	}
 	if token == "" {
-		return nil, nil
+		return nil, fmt.Errorf("GitHub token not found: set GH_TOKEN or GITHUB_TOKEN environment variable")
 	}
 
 	oauthTransport := oauth2.NewClient(
@@ -39,11 +52,28 @@ func GitHubClients(ctx context.Context, hostname string) (*http.Client, *githubv
 		Transport: &rateLimitTransport{wrapped: oauthTransport},
 	}
 
+	var graphqlClient *githubv4.Client
 	if IsCustomHost(hostname) {
 		graphqlURL := "https://api." + hostname + "/graphql"
-		return httpClient, githubv4.NewEnterpriseClient(graphqlURL, httpClient)
+		graphqlClient = githubv4.NewEnterpriseClient(graphqlURL, httpClient)
+	} else {
+		graphqlClient = githubv4.NewClient(httpClient)
 	}
-	return httpClient, githubv4.NewClient(httpClient)
+
+	restClient := github.NewClient(httpClient)
+	if IsCustomHost(hostname) {
+		baseURL, err := url.Parse(RESTBaseURL(hostname))
+		if err != nil {
+			return nil, fmt.Errorf("invalid REST base URL for hostname %q: %w", hostname, err)
+		}
+		restClient.BaseURL = baseURL
+	}
+
+	return &Clients{
+		HTTP:    httpClient,
+		GraphQL: graphqlClient,
+		REST:    restClient,
+	}, nil
 }
 
 // IsCustomHost returns true when the hostname refers to a non-default GitHub instance

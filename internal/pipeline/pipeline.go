@@ -6,13 +6,12 @@ package pipeline
 
 import (
 	"context"
-	"net/http"
 	"time"
 
-	"github.com/google/go-github/v83/github"
+	"github.com/microsoft/ghqr/internal/config"
 	"github.com/microsoft/ghqr/internal/models"
+	"github.com/microsoft/ghqr/internal/scanners"
 	"github.com/rs/zerolog/log"
-	"github.com/shurcooL/githubv4"
 )
 
 // ScanContext holds the state shared across pipeline stages.
@@ -21,13 +20,13 @@ type ScanContext struct {
 	Cancel    context.CancelFunc
 	StartTime time.Time
 	// OutputDir is computed once at startup and used by all stages.
-	OutputName          string
-	Params              *models.ScanParams
-	GitHubClient        *github.Client
-	GitHubGraphQLClient *githubv4.Client
-	// GitHubRawHTTPClient is the underlying HTTP client used by GitHubGraphQLClient.
-	// It shares the same auth and rate-limit transport, and is used for batch queries.
-	GitHubRawHTTPClient *http.Client
+	OutputName string
+	Params     *models.ScanParams
+	// Clients holds the three GitHub API clients built once during initialization.
+	// All stages must read from this field instead of constructing their own clients.
+	Clients *config.Clients
+	// GraphQLScanner is the batch-capable GraphQL client built once during initialization.
+	GraphQLScanner *scanners.GraphQLClient
 	// Results accumulates scan data for report rendering.
 	// Keys follow the pattern "type:name", e.g. "organization:my-org", "repository:owner/repo".
 	Results map[string]interface{}

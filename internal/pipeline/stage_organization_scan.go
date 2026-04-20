@@ -49,7 +49,7 @@ func (s *OrganizationScanStage) Execute(ctx *ScanContext) error {
 func (s *OrganizationScanStage) scanOrganization(ctx *ScanContext, org string) error {
 	log.Info().Str("organization", org).Msg("Scanning organization")
 
-	scanner := scanners.NewOrganizationScanner(ctx.GitHubClient, ctx.GitHubGraphQLClient, org)
+	scanner := scanners.NewOrganizationScanner(ctx.Clients.REST, ctx.Clients.GraphQL, org)
 	data, err := scanner.ScanAll(ctx.Ctx)
 	if err != nil {
 		return fmt.Errorf("scan failed: %w", err)
