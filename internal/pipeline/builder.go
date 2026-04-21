@@ -58,6 +58,11 @@ func (b *ScanPipelineBuilder) WithOrgRepositoryScan() *ScanPipelineBuilder {
 	return b.addStage(NewOrgRepositoryScanStage())
 }
 
+// WithRepositoryScan adds the individual repository scanning stage.
+func (b *ScanPipelineBuilder) WithRepositoryScan() *ScanPipelineBuilder {
+	return b.addStage(NewRepositoryScanStage())
+}
+
 // WithReportRendering adds the report rendering stage.
 func (b *ScanPipelineBuilder) WithReportRendering() *ScanPipelineBuilder {
 	return b.addStage(NewReportRenderingStage())
@@ -82,6 +87,7 @@ func (b *ScanPipelineBuilder) BuildDefault() *Pipeline {
 		WithOrganizationDiscovery().
 		WithOrganizationScan().
 		WithOrgRepositoryScan().
+		WithRepositoryScan().
 		WithEvaluation().
 		WithReportRendering().
 		Build()

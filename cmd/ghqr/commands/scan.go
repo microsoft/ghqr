@@ -42,6 +42,12 @@ Examples:
 
   # Scan enterprise and specific organizations
   ghqr scan -e my-enterprise -o org1 -o org2
+  
+  # Scan GitHub data residency (custom hostname)
+  ghqr scan -H mycompany.ghe.com -e my-enterprise
+
+  # Scan specific repositories
+  ghqr scan -r owner1/repo1 -r owner2/repo2
 
   # Scan with custom output name
   ghqr scan -e my-enterprise -n my-audit-2024
