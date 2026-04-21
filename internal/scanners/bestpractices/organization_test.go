@@ -59,9 +59,9 @@ func TestEvaluateOrganizationSecurity_2FA_NotRequired_NoEMU(t *testing.T) {
 		t.Errorf("org-sec-001 severity = %s, want high", issue.Severity)
 	}
 
-	emuIssue := findRuleID(result, "org-sec-001-emu")
+	emuIssue := findRuleID(result, "org-sec-006")
 	if emuIssue != nil {
-		t.Error("unexpected org-sec-001-emu finding when EMU is disabled")
+		t.Error("unexpected org-sec-006 finding when EMU is disabled")
 	}
 }
 
@@ -76,12 +76,12 @@ func TestEvaluateOrganizationSecurity_2FA_NotRequired_EMU(t *testing.T) {
 
 	result := eval.EvaluateOrganizationSecurity(settings)
 
-	emuIssue := findRuleID(result, "org-sec-001-emu")
+	emuIssue := findRuleID(result, "org-sec-006")
 	if emuIssue == nil {
-		t.Fatal("expected org-sec-001-emu finding when EMU is enabled")
+		t.Fatal("expected org-sec-006 finding when EMU is enabled")
 	}
 	if emuIssue.Severity != "info" {
-		t.Errorf("org-sec-001-emu severity = %s, want info", emuIssue.Severity)
+		t.Errorf("org-sec-006 severity = %s, want info", emuIssue.Severity)
 	}
 
 	issue := findRuleID(result, "org-sec-001")
@@ -104,7 +104,7 @@ func TestEvaluateOrganizationSecurity_2FA_Required(t *testing.T) {
 	if findRuleID(result, "org-sec-001") != nil {
 		t.Error("unexpected org-sec-001 finding when 2FA is required")
 	}
-	if findRuleID(result, "org-sec-001-emu") != nil {
-		t.Error("unexpected org-sec-001-emu finding when 2FA is required")
+	if findRuleID(result, "org-sec-006") != nil {
+		t.Error("unexpected org-sec-006 finding when 2FA is required")
 	}
 }

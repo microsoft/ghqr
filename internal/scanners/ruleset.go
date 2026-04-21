@@ -47,23 +47,26 @@ query FetchRulesets($owner: String!, $name: String!) {
 }
 `
 
+// gqlRulesetNode is one ruleset entry returned by the rulesets GraphQL query.
+type gqlRulesetNode struct {
+	Name        string `json:"name"`
+	Enforcement string `json:"enforcement"`
+	Target      string `json:"target"`
+	Rules       struct {
+		Nodes []struct {
+			Type       string                `json:"type"`
+			Parameters *gqlRulesetParameters `json:"parameters"`
+		} `json:"nodes"`
+	} `json:"rules"`
+}
+
 // gqlRulesetResponse maps the GraphQL response for the rulesets query.
 type gqlRulesetResponse struct {
 	Data struct {
 		Repository *struct {
 			Rulesets struct {
-				TotalCount int `json:"totalCount"`
-				Nodes      []struct {
-					Name        string `json:"name"`
-					Enforcement string `json:"enforcement"`
-					Target      string `json:"target"`
-					Rules       struct {
-						Nodes []struct {
-							Type       string                `json:"type"`
-							Parameters *gqlRulesetParameters `json:"parameters"`
-						} `json:"nodes"`
-					} `json:"rules"`
-				} `json:"nodes"`
+				TotalCount int              `json:"totalCount"`
+				Nodes      []gqlRulesetNode `json:"nodes"`
 			} `json:"rulesets"`
 		} `json:"repository"`
 	} `json:"data"`
@@ -333,17 +336,7 @@ func ChunkRulesetBatchRepos(repos []RulesetBatchRepo, n int) [][]RulesetBatchRep
 
 // parseRulesets converts GraphQL ruleset nodes into RulesetProtectionDetail.
 // Only ACTIVE rulesets targeting BRANCH are considered.
-func parseRulesets(nodes []struct {
-	Name        string `json:"name"`
-	Enforcement string `json:"enforcement"`
-	Target      string `json:"target"`
-	Rules       struct {
-		Nodes []struct {
-			Type       string                `json:"type"`
-			Parameters *gqlRulesetParameters `json:"parameters"`
-		} `json:"nodes"`
-	} `json:"rules"`
-}, branch string) *RulesetProtectionDetail {
+func parseRulesets(nodes []gqlRulesetNode, branch string) *RulesetProtectionDetail {
 	detail := &RulesetProtectionDetail{
 		Branch:           branch,
 		AllowForcePushes: true,

@@ -149,8 +149,8 @@ func (s *OrgRepositoryScanStage) enrichWithRulesets(ctx *ScanContext, org string
 	batchRepos := make([]scanners.RulesetBatchRepo, 0, len(needsEnrichment))
 	for _, key := range needsEnrichment {
 		repo := ctx.Results[key].(*scanners.RepositoryData)
-		branch := ""
-		if repo.Metadata != nil {
+		branch := "main"
+		if repo.Metadata != nil && repo.Metadata.DefaultBranch != "" {
 			branch = repo.Metadata.DefaultBranch
 		}
 		if branch == "" {
