@@ -164,8 +164,10 @@ func (s *RepositoryScanStage) enrichWithRulesets(ctx *ScanContext, owner string)
 	wg.Wait()
 
 	// Apply results to the scan context.
-	for _, key := range needsEnrichment {
+	totalRepos := len(needsEnrichment)
+	for index, key := range needsEnrichment {
 		repo := ctx.Results[key].(*scanners.RepositoryData)
+		logEnrichmentProgress(index+1, totalRepos, owner, repo.Name)
 		lookupKey := fmt.Sprintf("%s/%s", owner, repo.Name)
 		if detail, ok := allResults[lookupKey]; ok && detail != nil && detail.Protected {
 			repo.RulesetProtection = detail
@@ -175,6 +177,15 @@ func (s *RepositoryScanStage) enrichWithRulesets(ctx *ScanContext, owner string)
 				Msg("Repository protected by rulesets")
 		}
 	}
+}
+
+func logEnrichmentProgress(current int, total int, owner string, repoName string) {
+	fullName := fmt.Sprintf("%s/%s", owner, repoName)
+	log.Info().
+		Str("repository", fullName).
+		Int("current", current).
+		Int("total", total).
+		Msgf("Enriching repository %d of %d: %s", current, total, fullName)
 }
 
 // Skip returns true when no repositories were specified via the -r flag.
