@@ -187,7 +187,7 @@ func logEnrichmentProgress(currentIndex int, totalRepos int, repoFullName string
 		Str("repository", repoFullName).
 		Int("current", currentIndex).
 		Int("total", totalRepos).
-		Msgf("Enriching repository %d of %d: %s", currentIndex, totalRepos, repoFullName)
+		Msg("Enriching repository")
 }
 
 // Skip returns true when no repositories were specified via the -r flag.

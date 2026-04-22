@@ -45,7 +45,7 @@ func TestLogEnrichmentProgress(t *testing.T) {
 	if logEntry["total"] != float64(5) {
 		t.Fatalf("expected total=5, got %v", logEntry["total"])
 	}
-	if logEntry["message"] != "Enriching repository 2 of 5: octo-org/octo-repo" {
+	if logEntry["message"] != "Enriching repository" {
 		t.Fatalf("expected progress message, got %v", logEntry["message"])
 	}
 }
