@@ -179,6 +179,7 @@ func (s *RepositoryScanStage) enrichWithRulesets(ctx *ScanContext, owner string)
 	}
 }
 
+// logEnrichmentProgress outputs a structured log entry showing enrichment progress for a repository.
 func logEnrichmentProgress(current int, total int, owner string, repoName string) {
 	fullName := fmt.Sprintf("%s/%s", owner, repoName)
 	log.Info().
