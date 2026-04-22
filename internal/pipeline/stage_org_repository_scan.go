@@ -188,8 +188,10 @@ func (s *OrgRepositoryScanStage) enrichWithRulesets(ctx *ScanContext, org string
 	wg.Wait()
 
 	// Apply results to the scan context.
-	for _, key := range needsEnrichment {
+	totalRepos := len(needsEnrichment)
+	for index, key := range needsEnrichment {
 		repo := ctx.Results[key].(*scanners.RepositoryData)
+		logEnrichmentProgress(index+1, totalRepos, org, repo.Name)
 		lookupKey := fmt.Sprintf("%s/%s", org, repo.Name)
 		if detail, ok := allResults[lookupKey]; ok && detail != nil && detail.Protected {
 			repo.RulesetProtection = detail
