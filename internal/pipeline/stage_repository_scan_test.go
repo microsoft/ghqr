@@ -28,24 +28,24 @@ func TestLogEnrichmentProgress(t *testing.T) {
 		t.Fatal("expected log output, got empty output")
 	}
 
-	var entry map[string]any
-	if err := json.Unmarshal([]byte(logLine), &entry); err != nil {
+	var logEntry map[string]any
+	if err := json.Unmarshal([]byte(logLine), &logEntry); err != nil {
 		t.Fatalf("expected JSON log line, got error: %v", err)
 	}
 
-	if entry["level"] != "info" {
-		t.Fatalf("expected info level, got %v", entry["level"])
+	if logEntry["level"] != "info" {
+		t.Fatalf("expected info level, got %v", logEntry["level"])
 	}
-	if entry["repository"] != "octo-org/octo-repo" {
-		t.Fatalf("expected repository field, got %v", entry["repository"])
+	if logEntry["repository"] != "octo-org/octo-repo" {
+		t.Fatalf("expected repository field, got %v", logEntry["repository"])
 	}
-	if entry["current"] != float64(2) {
-		t.Fatalf("expected current=2, got %v", entry["current"])
+	if logEntry["current"] != float64(2) {
+		t.Fatalf("expected current=2, got %v", logEntry["current"])
 	}
-	if entry["total"] != float64(5) {
-		t.Fatalf("expected total=5, got %v", entry["total"])
+	if logEntry["total"] != float64(5) {
+		t.Fatalf("expected total=5, got %v", logEntry["total"])
 	}
-	if entry["message"] != "Enriching repository 2 of 5: octo-org/octo-repo" {
-		t.Fatalf("expected progress message, got %v", entry["message"])
+	if logEntry["message"] != "Enriching repository 2 of 5: octo-org/octo-repo" {
+		t.Fatalf("expected progress message, got %v", logEntry["message"])
 	}
 }

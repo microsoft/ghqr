@@ -179,13 +179,15 @@ func (s *RepositoryScanStage) enrichWithRulesets(ctx *ScanContext, owner string)
 	}
 }
 
-// logEnrichmentProgress outputs a structured log entry showing enrichment progress for a repository.
-func logEnrichmentProgress(current int, total int, fullName string) {
+// logEnrichmentProgress outputs a structured log entry showing enrichment progress.
+// Parameters: current is the current repository index, total is the total number
+// of repositories, and repoFullName is the repository in owner/name format.
+func logEnrichmentProgress(current int, total int, repoFullName string) {
 	log.Info().
-		Str("repository", fullName).
+		Str("repository", repoFullName).
 		Int("current", current).
 		Int("total", total).
-		Msgf("Enriching repository %d of %d: %s", current, total, fullName)
+		Msgf("Enriching repository %d of %d: %s", current, total, repoFullName)
 }
 
 // Skip returns true when no repositories were specified via the -r flag.
