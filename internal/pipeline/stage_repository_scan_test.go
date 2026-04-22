@@ -21,7 +21,7 @@ func TestLogEnrichmentProgress(t *testing.T) {
 		log.Logger = originalLogger
 	})
 
-	logEnrichmentProgress(2, 5, "octo-org", "octo-repo")
+	logEnrichmentProgress(2, 5, "octo-org/octo-repo")
 
 	logLine := strings.TrimSpace(output.String())
 	if logLine == "" {

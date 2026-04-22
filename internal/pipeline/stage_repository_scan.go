@@ -167,8 +167,8 @@ func (s *RepositoryScanStage) enrichWithRulesets(ctx *ScanContext, owner string)
 	totalRepos := len(needsEnrichment)
 	for index, key := range needsEnrichment {
 		repo := ctx.Results[key].(*scanners.RepositoryData)
-		logEnrichmentProgress(index+1, totalRepos, owner, repo.Name)
 		lookupKey := fmt.Sprintf("%s/%s", owner, repo.Name)
+		logEnrichmentProgress(index+1, totalRepos, lookupKey)
 		if detail, ok := allResults[lookupKey]; ok && detail != nil && detail.Protected {
 			repo.RulesetProtection = detail
 			log.Debug().
@@ -180,8 +180,7 @@ func (s *RepositoryScanStage) enrichWithRulesets(ctx *ScanContext, owner string)
 }
 
 // logEnrichmentProgress outputs a structured log entry showing enrichment progress for a repository.
-func logEnrichmentProgress(current int, total int, owner string, repoName string) {
-	fullName := fmt.Sprintf("%s/%s", owner, repoName)
+func logEnrichmentProgress(current int, total int, fullName string) {
 	log.Info().
 		Str("repository", fullName).
 		Int("current", current).
