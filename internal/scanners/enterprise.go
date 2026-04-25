@@ -224,7 +224,7 @@ func (e *EnterpriseScanner) getAuditLog(ctx context.Context) (*EnterpriseAuditLo
 	for _, entryBytes := range raw {
 		var entry rawAuditEntry
 		if err := json.Unmarshal(entryBytes, &entry); err != nil {
-			log.Debug().Err(err).Msg("Skipping unparseable audit log entry")
+			log.Debug().Err(err).Msg("Skipping unparsable audit log entry")
 			continue
 		}
 		if suspiciousActions[entry.Action] {
