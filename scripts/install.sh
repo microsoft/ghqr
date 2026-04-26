@@ -6,15 +6,22 @@ then
     exit
 fi
 
+os=$(uname -s)
+if [ "$os" == "Darwin" ]; then
+    os="darwin"
+else
+    os="linux"
+fi
+
 arch=$(uname -m)
-if [ "$arch" == "aarch64" ]; then
+if [ "$arch" == "aarch64" ] || [ "$arch" == "arm64" ]; then
     arch="arm64"
 else
     arch="amd64"
 fi
 
 latest_ghqr=$(curl -sL https://api.github.com/repos/microsoft/ghqr/releases/latest | jq -r ".tag_name" | cut -c1-)
-wget https://github.com/microsoft/ghqr/releases/download/$latest_ghqr/ghqr-linux-$arch.zip -O ghqr.zip
+wget https://github.com/microsoft/ghqr/releases/download/$latest_ghqr/ghqr-$os-$arch.zip -O ghqr.zip
 unzip -uj -qq ghqr.zip
 rm ghqr.zip
 chmod +x ghqr
