@@ -56,8 +56,9 @@ func (s *OrganizationDiscoveryStage) Execute(ctx *ScanContext) error {
 }
 
 func (s *OrganizationDiscoveryStage) Skip(ctx *ScanContext) bool {
-	// Skip auto-discovery when organizations are already specified or when
-	// only specific repositories were requested (no need to discover orgs).
-	return len(ctx.Params.Organizations) > 0 ||
+	// Skip auto-discovery when organizations are already specified, when only specific
+	// repositories were requested, or when replaying from a JSON file.
+	return ctx.Params.FromJSON != "" ||
+		len(ctx.Params.Organizations) > 0 ||
 		len(ctx.Params.Repositories) > 0
 }

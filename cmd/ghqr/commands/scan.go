@@ -21,6 +21,7 @@ func init() {
 	scanCmd.PersistentFlags().StringP("hostname", "H", "", "GitHub hostname (e.g. mycompany.ghe.com for Data Residency). Defaults to github.com. Also reads GH_HOST env var")
 	scanCmd.PersistentFlags().Bool("xlsx", true, "Create Excel (.xlsx) report")
 	scanCmd.PersistentFlags().Bool("markdown", true, "Create Markdown (.md) executive report")
+	scanCmd.PersistentFlags().String("from-json", "", "Replay enrichment from an existing scan JSON file (skips all GitHub API calls)")
 
 	rootCmd.AddCommand(scanCmd)
 }
@@ -53,7 +54,10 @@ Examples:
   ghqr scan -e my-enterprise -n my-audit-2024
 
   # Scan and generate JSON output
-  ghqr scan -e my-enterprise --json`,
+  ghqr scan -e my-enterprise --json
+
+  # Replay enrichment against an existing scan JSON (no GitHub API calls)
+  ghqr scan --from-json ghqr_20260417_143426.json`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		scan(cmd)
@@ -66,15 +70,30 @@ func scan(cmd *cobra.Command) {
 		hostname = os.Getenv("GH_HOST")
 	}
 
+	fromJSON := getString(cmd, "from-json")
+	enterprises := getStringArray(cmd, "enterprise")
+	organizations := getStringArray(cmd, "organization")
+	repositories := getStringArray(cmd, "repository")
+
+	if fromJSON != "" && (len(enterprises) > 0 || len(organizations) > 0 || len(repositories) > 0) {
+		log.Fatal().Msg("--from-json cannot be combined with -e/--enterprise, -o/--organization, or -r/--repository")
+	}
+	if fromJSON != "" {
+		if _, err := os.Stat(fromJSON); err != nil {
+			log.Fatal().Err(err).Str("path", fromJSON).Msg("--from-json file is not accessible")
+		}
+	}
+
 	params := models.ScanParams{
-		Enterprises:   getStringArray(cmd, "enterprise"),
-		Organizations: getStringArray(cmd, "organization"),
-		Repositories:  getStringArray(cmd, "repository"),
+		Enterprises:   enterprises,
+		Organizations: organizations,
+		Repositories:  repositories,
 		OutputName:    getString(cmd, "output-name"),
 		Hostname:      hostname,
 		Debug:         getBool(cmd, "debug"),
 		Xlsx:          getBool(cmd, "xlsx"),
 		Markdown:      getBool(cmd, "markdown"),
+		FromJSON:      fromJSON,
 	}
 
 	scanner := pipeline.Scanner{}

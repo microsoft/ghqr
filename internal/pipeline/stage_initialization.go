@@ -47,5 +47,6 @@ func (s *InitializationStage) Execute(ctx *ScanContext) error {
 }
 
 func (s *InitializationStage) Skip(ctx *ScanContext) bool {
-	return false
+	// Skip GitHub authentication and client setup when replaying from a JSON file.
+	return ctx.Params != nil && ctx.Params.FromJSON != ""
 }

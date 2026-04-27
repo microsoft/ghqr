@@ -96,6 +96,9 @@ func (s *OrgRepositoryScanStage) Execute(ctx *ScanContext) error {
 }
 
 func (s *OrgRepositoryScanStage) Skip(ctx *ScanContext) bool {
+	if ctx.Params != nil && ctx.Params.FromJSON != "" {
+		return true
+	}
 	for key := range ctx.Results {
 		if strings.HasPrefix(key, "organization:") {
 			return false
