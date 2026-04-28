@@ -153,9 +153,7 @@ Add to your `.vscode/mcp.json`:
 
 | Tool | Description |
 |------|-------------|
-| `scan_organization` | Scan a GitHub organization for best practices |
-| `scan_repository` | Scan a specific repository |
-| `scan_enterprise` | Scan a GitHub Enterprise |
+| `scan` | Scan GitHub enterprises, organizations, or repositories for best practices and security recommendations |
 
 ## Troubleshooting
 
