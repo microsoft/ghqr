@@ -76,8 +76,10 @@ func (s *EnterpriseDiscoveryStage) Execute(ctx *ScanContext) error {
 }
 
 func (s *EnterpriseDiscoveryStage) Skip(ctx *ScanContext) bool {
-	// Skip auto-discovery when the user explicitly specified enterprises, organizations, or repositories.
-	return len(ctx.Params.Enterprises) > 0 ||
+	// Skip auto-discovery when the user explicitly specified enterprises, organizations, or repositories,
+	// or when replaying from a JSON file.
+	return ctx.Params.FromJSON != "" ||
+		len(ctx.Params.Enterprises) > 0 ||
 		len(ctx.Params.Organizations) > 0 ||
 		len(ctx.Params.Repositories) > 0
 }

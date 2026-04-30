@@ -6,6 +6,8 @@ package pipeline
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/microsoft/ghqr/internal/models"
@@ -31,6 +33,12 @@ func (b *ScanPipelineBuilder) addStage(stage Stage) *ScanPipelineBuilder {
 // WithInitialization adds the initialization stage.
 func (b *ScanPipelineBuilder) WithInitialization() *ScanPipelineBuilder {
 	return b.addStage(NewInitializationStage())
+}
+
+// WithLoadFromJSON adds the load-from-json replay stage. The stage self-skips
+// unless ScanParams.FromJSON is set.
+func (b *ScanPipelineBuilder) WithLoadFromJSON() *ScanPipelineBuilder {
+	return b.addStage(NewLoadFromJSONStage())
 }
 
 // WithEnterpriseScan adds the enterprise scanning stage.
@@ -82,6 +90,7 @@ func (b *ScanPipelineBuilder) Build() *Pipeline {
 func (b *ScanPipelineBuilder) BuildDefault() *Pipeline {
 	return b.
 		WithInitialization().
+		WithLoadFromJSON().
 		WithEnterpriseDiscovery().
 		WithEnterpriseScan().
 		WithOrganizationDiscovery().
@@ -100,7 +109,13 @@ func NewScanContext(params *models.ScanParams) *ScanContext {
 
 	outputName := params.OutputName
 	if outputName == "" {
-		outputName = fmt.Sprintf("ghqr_%s", startTime.Format("20060102_150405"))
+		if params.FromJSON != "" {
+			base := filepath.Base(params.FromJSON)
+			base = strings.TrimSuffix(base, filepath.Ext(base))
+			outputName = fmt.Sprintf("%s_replay_%s", base, startTime.Format("20060102_150405"))
+		} else {
+			outputName = fmt.Sprintf("ghqr_%s", startTime.Format("20060102_150405"))
+		}
 	}
 
 	return &ScanContext{

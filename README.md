@@ -116,6 +116,16 @@ ghqr scan
 
 For GitHub Enterprise Cloud with Data Residency, see [Data Residency](#github-enterprise-cloud-with-data-residency-ghecom).
 
+### Replaying Enrichment from a Previous Scan
+
+To iterate on evaluation rules or re-render reports without re-querying GitHub, replay an existing scan JSON file:
+
+```bash
+ghqr scan --from-json ghqr_20260417_143426.json
+```
+
+The scan stages are skipped — no GitHub API calls or token are required — and a fresh `<input>_replay_<timestamp>.json` (plus xlsx/markdown when enabled) is produced. Note: the JSON renderer compacts `collaborators` and `deploy_keys` arrays into summaries, so per-collaborator and per-deploy-key rules cannot be re-evaluated from a replayed file.
+
 Run `ghqr -h` for all available commands and options.
 
 ### MCP Server (Model Context Protocol)
