@@ -126,6 +126,35 @@ ghqr scan --from-json ghqr_20260417_143426.json
 
 The scan stages are skipped — no GitHub API calls or token are required — and a fresh `<input>_replay_<timestamp>.json` (plus xlsx/markdown when enabled) is produced. Note: the JSON renderer compacts `collaborators` and `deploy_keys` arrays into summaries, so per-collaborator and per-deploy-key rules cannot be re-evaluated from a replayed file.
 
+### Generating Synthetic (Mock) Scans
+
+For demos, report-template development, or load-testing the renderers without a GitHub token, generate a synthetic scan JSON for any number of organizations and repositories:
+
+```bash
+# 1 org with 5 repos (defaults)
+ghqr mock
+
+# 3 orgs, 10 repos each, wrapped in an enterprise; deterministic output
+ghqr mock -o 3 -r 10 -e mock-ent --seed 42
+
+# Generate JSON and immediately render markdown + xlsx in one shot
+ghqr mock -o 5 -r 20 --profile noisy --render
+```
+
+Flags:
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-o, --orgs` | `1` | Number of organizations to synthesize |
+| `-r, --repos` | `5` | Number of repositories per organization |
+| `-e, --enterprise` | _(none)_ | Optional enterprise slug wrapping all orgs |
+| `--profile` | `typical` | Distribution profile: `clean`, `typical`, or `noisy` |
+| `--seed` | `0` | RNG seed for reproducible output (`0` = time-based) |
+| `-O, --output` | `ghqr_mock_<timestamp>.json` | Output JSON path |
+| `--render` | `false` | After writing JSON, replay it through the scan pipeline to produce md/xlsx |
+
+The generator emits **only raw entity facts** — recommendations and summaries are computed by the existing evaluation stage when the file is replayed via `--from-json`. This keeps mock data automatically in sync with the rule definitions in [`internal/recommendations/definitions/`](internal/recommendations/definitions). No GitHub API calls are made; no token is required.
+
 Run `ghqr -h` for all available commands and options.
 
 ### MCP Server (Model Context Protocol)
