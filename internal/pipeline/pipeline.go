@@ -8,6 +8,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/go-github/v83/github"
 	"github.com/microsoft/ghqr/internal/config"
 	"github.com/microsoft/ghqr/internal/models"
 	"github.com/microsoft/ghqr/internal/scanners"
@@ -27,8 +28,11 @@ type ScanContext struct {
 	Clients *config.Clients
 	// GraphQLScanner is the batch-capable GraphQL client built once during initialization.
 	GraphQLScanner *scanners.GraphQLClient
+	// GHESClients maps GHES hostname to its REST client for multi-instance scanning.
+	GHESClients map[string]*github.Client
 	// Results accumulates scan data for report rendering.
 	// Keys follow the pattern "type:name", e.g. "organization:my-org", "repository:owner/repo".
+	// GHES results use "ghes:<hostname>".
 	Results map[string]interface{}
 	// Ownership tracks parent/child relationships discovered during scanning.
 	// Keys are "organization:<login>" and values are the enterprise slug that owns the org.

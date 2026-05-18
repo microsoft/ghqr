@@ -16,7 +16,6 @@ import (
 	"github.com/google/go-github/v83/github"
 	"github.com/rs/zerolog/log"
 	"github.com/shurcooL/githubv4"
-	"golang.org/x/oauth2"
 )
 
 // Clients holds the three GitHub API clients that share a single authenticated,
@@ -43,14 +42,7 @@ func NewClients(ctx context.Context, hostname string) (*Clients, error) {
 		return nil, fmt.Errorf("GitHub token not found: set GH_TOKEN or GITHUB_TOKEN environment variable")
 	}
 
-	oauthTransport := oauth2.NewClient(
-		ctx,
-		oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}),
-	).Transport
-
-	httpClient := &http.Client{
-		Transport: &rateLimitTransport{wrapped: oauthTransport},
-	}
+	httpClient := newAuthenticatedHTTPClient(ctx, token)
 
 	var graphqlClient *githubv4.Client
 	if IsCustomHost(hostname) {

@@ -1,0 +1,65 @@
+- id: ghes-server-001
+  scope: ghes
+  title: GHES instance version detected
+  category: ghes_server
+  severity: info
+  description: Reports the GHES installed_version returned by /meta. Always emitted as a baseline observation.
+  recommendation: Keep your GHES instance up-to-date with the latest patch release to receive security fixes and improvements
+  learnMore: https://docs.github.com/en/enterprise-server/admin/upgrading-your-instance/preparing-to-upgrade/overview-of-the-upgrade-process
+  tags: [ghes, server]
+  enabled: true
+
+- id: ghes-server-002
+  scope: ghes
+  title: GHES version is within the supported release window
+  category: ghes_server
+  severity: info
+  description: GitHub provides security patches for the latest three minor releases. This finding confirms the appliance is within that window.
+  recommendation: No action needed — continue tracking new GHES releases for upcoming upgrades
+  learnMore: https://docs.github.com/en/enterprise-server/admin/all-releases
+  tags: [ghes, server, version]
+  enabled: true
+
+- id: ghes-server-003
+  scope: ghes
+  title: GHES version is no longer in support
+  category: ghes_server
+  severity: high
+  description: The appliance is running a GHES minor release outside the documented support window (latest three minors). Unsupported releases stop receiving security patches.
+  recommendation: Upgrade to a supported release. GitHub only ships security patches for the latest 3 minor versions
+  learnMore: https://docs.github.com/en/enterprise-server/admin/all-releases
+  tags: [ghes, server, version, support]
+  enabled: true
+
+- id: ghes-server-004
+  scope: ghes
+  title: GHES version string could not be parsed
+  category: ghes_server
+  severity: medium
+  description: /meta returned an installed_version that does not match the expected semantic-version shape. The support-window check cannot run until the version is recognisable.
+  recommendation: Confirm the appliance reports a standard semantic version via /meta
+  learnMore: https://docs.github.com/en/enterprise-server/rest/meta/meta
+  tags: [ghes, server, version]
+  enabled: true
+
+- id: ghes-server-005
+  scope: ghes
+  title: GHES server version could not be determined
+  category: ghes_server
+  severity: medium
+  description: /meta did not return an installed_version field. This may indicate the token cannot read server metadata.
+  recommendation: Ensure the token has sufficient permissions to read server metadata
+  learnMore: https://docs.github.com/en/enterprise-server/rest/meta/meta
+  tags: [ghes, server]
+  enabled: true
+
+- id: ghes-server-006
+  scope: ghes
+  title: GHES instance is currently in maintenance mode
+  category: ghes_server
+  severity: high
+  description: The appliance has maintenance mode enabled. Users cannot push, pull, or use the UI until it is disabled.
+  recommendation: Maintenance mode prevents user access. Ensure this is intentional and plan to disable it after maintenance is complete
+  learnMore: https://docs.github.com/en/enterprise-server/admin/configuration/configuring-your-enterprise/enabling-and-scheduling-maintenance-mode
+  tags: [ghes, server, maintenance]
+  enabled: true

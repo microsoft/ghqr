@@ -22,7 +22,7 @@ func NewEnterpriseDiscoveryStage() *EnterpriseDiscoveryStage {
 }
 
 func (s *EnterpriseDiscoveryStage) Execute(ctx *ScanContext) error {
-	if ctx.Clients.GraphQL == nil {
+	if ctx.Clients == nil || ctx.Clients.GraphQL == nil {
 		log.Warn().Msg("GraphQL client not available - skipping enterprise discovery")
 		return nil
 	}

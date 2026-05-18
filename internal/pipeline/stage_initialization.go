@@ -26,6 +26,16 @@ func NewInitializationStage() *InitializationStage {
 func (s *InitializationStage) Execute(ctx *ScanContext) error {
 	log.Info().Msg("Initializing scan...")
 
+	// If nothing on the github.com side is requested, skip client initialization
+	// entirely so --ghes-only scans can run without a github.com token.
+	needsGitHubCom := len(ctx.Params.Enterprises) > 0 ||
+		len(ctx.Params.Organizations) > 0 ||
+		len(ctx.Params.Repositories) > 0
+	if !needsGitHubCom {
+		log.Info().Msg("GHES-only scan; skipping github.com client initialization")
+		return nil
+	}
+
 	hostname := ctx.Params.Hostname
 
 	clients, err := config.NewClients(ctx.Ctx, hostname)

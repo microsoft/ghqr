@@ -31,8 +31,8 @@ func generateMarkdown(report *renderers.ScanReport) string {
 	sb.WriteString(fmt.Sprintf("# GitHub Assessment Report — %s\n\n", scopeName))
 	sb.WriteString(fmt.Sprintf("**Scope:** %s\n", scopeType))
 	sb.WriteString(fmt.Sprintf("**Generated:** %s\n", time.Now().Format("January 2, 2006")))
-	sb.WriteString(fmt.Sprintf("**Scan Coverage:** %d enterprises / %d organizations / %d repositories\n\n",
-		len(report.Enterprises), len(report.Organizations), len(report.Repositories)))
+	sb.WriteString(fmt.Sprintf("**Scan Coverage:** %d enterprises / %d GHES instances / %d organizations / %d repositories\n\n",
+		len(report.Enterprises), len(report.GHES), len(report.Organizations), len(report.Repositories)))
 	sb.WriteString("---\n\n")
 
 	// === Executive Summary ===

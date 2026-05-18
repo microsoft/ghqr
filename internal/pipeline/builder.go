@@ -81,16 +81,26 @@ func (b *ScanPipelineBuilder) WithEvaluation() *ScanPipelineBuilder {
 	return b.addStage(NewEvaluationStage())
 }
 
+// WithGHESScan adds the GitHub Enterprise Server scanning stage.
+func (b *ScanPipelineBuilder) WithGHESScan() *ScanPipelineBuilder {
+	return b.addStage(NewGHESScanStage())
+}
+
 // Build creates the pipeline with all configured stages.
 func (b *ScanPipelineBuilder) Build() *Pipeline {
 	return NewPipeline(b.stages...)
 }
 
 // BuildDefault creates a pipeline with all standard stages.
+//
+// LoadFromJSON runs BEFORE any scanning stage so that --from-json replays do
+// not issue any live API calls. Every scanning stage must additionally check
+// ctx.Params.FromJSON in its Skip() method as a belt-and-braces guard.
 func (b *ScanPipelineBuilder) BuildDefault() *Pipeline {
 	return b.
 		WithInitialization().
 		WithLoadFromJSON().
+		WithGHESScan().
 		WithEnterpriseDiscovery().
 		WithEnterpriseScan().
 		WithOrganizationDiscovery().

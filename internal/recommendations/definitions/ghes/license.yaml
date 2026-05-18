@@ -1,0 +1,54 @@
+- id: ghes-license-001
+  scope: ghes
+  title: GHES license is expiring soon
+  category: ghes_license
+  severity: high
+  description: The license expires within 30-90 days. Once expired the appliance enters a degraded state.
+  recommendation: Plan your GHES license renewal — contact GitHub Sales
+  learnMore: https://docs.github.com/en/enterprise-server/billing/managing-your-license-for-github-enterprise/about-licenses-for-github-enterprise
+  tags: [ghes, license, expiration]
+  enabled: true
+
+- id: ghes-license-005
+  scope: ghes
+  title: GHES license expires within 30 days
+  category: ghes_license
+  severity: critical
+  description: The license expires within 30 days. The appliance will enter a degraded state at expiration; renewal cannot wait.
+  recommendation: Renew your GitHub Enterprise Server license immediately to avoid service interruption
+  learnMore: https://docs.github.com/en/enterprise-server/billing/managing-your-license-for-github-enterprise/about-licenses-for-github-enterprise
+  tags: [ghes, license, expiration, urgent]
+  enabled: true
+
+- id: ghes-license-002
+  scope: ghes
+  title: GHES license seat utilisation is high
+  category: ghes_license
+  severity: high
+  description: Seat utilisation has crossed 90%%. New user provisioning is at risk of being blocked when the limit is reached.
+  recommendation: You are approaching your license seat limit. Consider purchasing additional seats or reviewing inactive users
+  learnMore: https://docs.github.com/en/enterprise-server/billing/managing-your-license-for-github-enterprise/about-licenses-for-github-enterprise
+  tags: [ghes, license, capacity]
+  enabled: true
+
+- id: ghes-license-003
+  scope: ghes
+  title: GHES license seat utilisation summary
+  category: ghes_license
+  severity: info
+  description: Reports the current seat utilisation for a bounded GHES license.
+  recommendation: Monitor seat utilization regularly
+  learnMore: https://docs.github.com/en/enterprise-server/billing/managing-your-license-for-github-enterprise/about-licenses-for-github-enterprise
+  tags: [ghes, license]
+  enabled: true
+
+- id: ghes-license-004
+  scope: ghes
+  title: GHES license is unlimited
+  category: ghes_license
+  severity: info
+  description: The license kind is unlimited. Capacity planning shifts to active-user growth rather than a seat cap.
+  recommendation: Unlimited seats — monitor active user growth for capacity planning
+  learnMore: https://docs.github.com/en/enterprise-server/billing/managing-your-license-for-github-enterprise/about-licenses-for-github-enterprise
+  tags: [ghes, license, unlimited]
+  enabled: true

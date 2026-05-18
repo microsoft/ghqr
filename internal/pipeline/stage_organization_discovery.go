@@ -56,8 +56,12 @@ func (s *OrganizationDiscoveryStage) Execute(ctx *ScanContext) error {
 }
 
 func (s *OrganizationDiscoveryStage) Skip(ctx *ScanContext) bool {
-	// Skip auto-discovery when organizations are already specified, when only specific
-	// repositories were requested, or when replaying from a JSON file.
+	// Skip auto-discovery when no github.com client was initialized (GHES-only run),
+	// when organizations or repositories are already specified, or when replaying
+	// from a JSON file.
+	if ctx.Clients == nil {
+		return true
+	}
 	return ctx.Params.FromJSON != "" ||
 		len(ctx.Params.Organizations) > 0 ||
 		len(ctx.Params.Repositories) > 0
