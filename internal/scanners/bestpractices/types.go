@@ -29,6 +29,7 @@ const (
 	CategoryCopilotMCP        = "copilot_mcp"
 	CategoryCopilotExtensions = "copilot_extensions"
 	CategoryActions           = "actions"
+	CategoryBudget            = "budget"
 	CategoryFeatures          = "features"
 	CategoryAccess            = "access"
 	CategoryMaintenance       = "maintenance"

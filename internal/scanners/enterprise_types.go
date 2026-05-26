@@ -12,6 +12,34 @@ type EnterpriseData struct {
 	AuditLog       *EnterpriseAuditLogData   `json:"audit_log,omitempty"`
 	SecurityAlerts *EnterpriseSecurityAlerts `json:"security_alerts,omitempty"`
 	GHASSettings   *EnterpriseGHASSettings   `json:"ghas_settings,omitempty"`
+	Budgets        *EnterpriseBudgets        `json:"budgets,omitempty"`
+}
+
+// EnterpriseBudgets holds budget information retrieved from the enterprise billing API.
+type EnterpriseBudgets struct {
+	// TotalCount is the total number of budgets configured in the enterprise.
+	TotalCount int            `json:"total_count"`
+	Budgets    []*BudgetEntry `json:"budgets,omitempty"`
+	// Available is false when the budgets endpoint is inaccessible (403/404).
+	Available bool `json:"available"`
+}
+
+// BudgetEntry represents a single budget configured in the enterprise.
+type BudgetEntry struct {
+	ID                  string         `json:"id"`
+	BudgetType          string         `json:"budget_type"`
+	BudgetProductSkus   []string       `json:"budget_product_skus,omitempty"`
+	BudgetScope         string         `json:"budget_scope"`
+	BudgetEntityName    string         `json:"budget_entity_name,omitempty"`
+	BudgetAmount        int            `json:"budget_amount"`
+	PreventFurtherUsage bool           `json:"prevent_further_usage"`
+	BudgetAlerting      *BudgetAlertConfig `json:"budget_alerting,omitempty"`
+}
+
+// BudgetAlertConfig holds alerting configuration for a budget.
+type BudgetAlertConfig struct {
+	WillAlert       bool     `json:"will_alert"`
+	AlertRecipients []string `json:"alert_recipients,omitempty"`
 }
 
 // EnterpriseSecurityAlerts holds aggregate open security alert counts at the enterprise level.

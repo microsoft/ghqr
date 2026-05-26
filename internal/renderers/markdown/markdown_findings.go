@@ -19,6 +19,7 @@ func collectAllFindings(report *renderers.ScanReport) []entityFindings {
 		ef := entityFindings{EntityName: name, EntityType: "enterprise"}
 		ef.Findings = append(ef.Findings, extractRecommendations(data, "evaluation")...)
 		ef.Findings = append(ef.Findings, extractRecommendations(data, "enterprise_security_alerts_evaluation")...)
+		ef.Findings = append(ef.Findings, extractRecommendations(data, "enterprise_budgets_evaluation")...)
 		if len(ef.Findings) > 0 {
 			all = append(all, ef)
 		}

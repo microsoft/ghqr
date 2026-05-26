@@ -1,0 +1,32 @@
+- id: ent-budget-001
+  scope: enterprise
+  title: No billing budgets configured
+  category: budget
+  severity: critical
+  description: No billing budgets are configured for this enterprise. Without budgets, there is no governance control over usage-based spending (e.g., GitHub Actions, Copilot, Packages), which poses a significant FinOps and cost-control risk.
+  recommendation: Configure at least one budget at the enterprise level to establish spending limits and enable cost governance. Consider adding budgets at the organization and cost center levels as well.
+  learnMore: https://docs.github.com/en/enterprise-cloud@latest/billing/using-the-new-billing-platform/about-the-new-billing-platform-for-enterprises
+  tags: [budget, cost, governance]
+  enabled: true
+
+- id: ent-budget-002
+  scope: enterprise
+  title: No budgets have alerting enabled
+  category: budget
+  severity: high
+  description: None of the configured budgets have alerting enabled. Without alerts, enterprise admins and billing managers will not be notified when spending approaches or exceeds budget thresholds, reducing the effectiveness of cost governance.
+  recommendation: Enable alerting on at least one budget and configure alert recipients (enterprise admins or billing managers) to receive notifications when spending thresholds are approached.
+  learnMore: https://docs.github.com/en/enterprise-cloud@latest/billing/using-the-new-billing-platform/about-the-new-billing-platform-for-enterprises
+  tags: [budget, cost, alerting]
+  enabled: true
+
+- id: ent-budget-003
+  scope: enterprise
+  title: Budgets without usage prevention when exceeded
+  category: budget
+  severity: medium
+  description: One or more budgets do not prevent further usage when the budget amount is exceeded. This means spending can continue unbounded past the configured limit, undermining the purpose of having a budget.
+  recommendation: Enable "prevent further usage" on budgets where hard spending caps are required. For advisory-only budgets, ensure alerting is enabled so overages are at least visible.
+  learnMore: https://docs.github.com/en/enterprise-cloud@latest/billing/using-the-new-billing-platform/about-the-new-billing-platform-for-enterprises
+  tags: [budget, cost, governance]
+  enabled: true

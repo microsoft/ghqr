@@ -50,6 +50,9 @@ func generateMarkdown(report *renderers.ScanReport) string {
 	sb.WriteString(generateRiskDistribution(severityCounts, totalFindings))
 	sb.WriteString("\n---\n\n")
 
+	// === Budget Overview (enterprise only) ===
+	sb.WriteString(generateBudgetOverview(report))
+
 	// === Findings by Subject ===
 	sb.WriteString("## Findings by Subject\n\n")
 	sb.WriteString(generateFindingsByCategory(allFindings))

@@ -64,6 +64,7 @@ func RenderJSON(results map[string]interface{}, outputName string) (string, erro
 		{"evaluation:org_security_alerts:", "org_security_alerts_evaluation", report.Organizations},
 		{"evaluation:security_managers:", "security_managers_evaluation", report.Organizations},
 		{"evaluation:enterprise_security_alerts:", "enterprise_security_alerts_evaluation", report.Enterprises},
+		{"evaluation:enterprise_budgets:", "enterprise_budgets_evaluation", report.Enterprises},
 		{"evaluation:metadata:", "metadata_evaluation", report.Repositories},
 	}
 	for key, eval := range results {

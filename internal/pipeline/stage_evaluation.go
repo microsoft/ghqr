@@ -85,6 +85,11 @@ func (s *EvaluationStage) Execute(ctx *ScanContext) error {
 			// Enterprise-wide GHAS policy defaults (REST: GET /enterprises/{slug}/code_security/settings)
 			ctx.Results["evaluation:enterprise_ghas:"+enterpriseName] = s.eval.EvaluateEnterpriseGHASSettings(enterprise.GHASSettings)
 
+			// Enterprise billing budgets (REST: GET /enterprises/{slug}/settings/billing/budgets)
+			if enterprise.Budgets != nil {
+				ctx.Results["evaluation:enterprise_budgets:"+enterpriseName] = s.eval.EvaluateBudgets(enterprise.Budgets)
+			}
+
 		case strings.HasPrefix(key, "repository:"):
 			repo := toType[scanners.RepositoryData](data)
 			if repo == nil {
