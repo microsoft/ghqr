@@ -332,6 +332,62 @@ func (e *EnterpriseScanner) getGHASSettings(ctx context.Context) (*EnterpriseGHA
 	return &settings, nil
 }
 
+// getBudgets fetches enterprise billing budgets via REST.
+// GET /enterprises/{enterprise}/settings/billing/budgets returns paginated budget data.
+// Returns nil (no error) when the endpoint is inaccessible (token lacks admin or billing manager scope).
+func (e *EnterpriseScanner) getBudgets(ctx context.Context) (*EnterpriseBudgets, error) {
+	if e.restClient == nil {
+		return nil, nil
+	}
+
+	type budgetsResponse struct {
+		Budgets     []*BudgetEntry `json:"budgets"`
+		HasNextPage bool           `json:"has_next_page"`
+		TotalCount  int            `json:"total_count"`
+	}
+
+	var allBudgets []*BudgetEntry
+	page := 1
+	for {
+		u := fmt.Sprintf("enterprises/%s/settings/billing/budgets?per_page=10&page=%d", e.enterprise, page)
+		req, err := e.restClient.NewRequest("GET", u, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build budgets request: %w", err)
+		}
+		// The budgets API requires the 2026-03-10 API version.
+		req.Header.Set("X-GitHub-Api-Version", "2026-03-10")
+
+		var result budgetsResponse
+		resp, err := e.restClient.Do(ctx, req, &result)
+		if err != nil {
+			if resp != nil && (resp.StatusCode == 403 || resp.StatusCode == 404) {
+				log.Debug().Str("enterprise", e.enterprise).
+					Msg("Enterprise budgets not accessible (insufficient permissions or feature not enabled)")
+				return &EnterpriseBudgets{Available: false}, nil
+			}
+			return nil, fmt.Errorf("failed to get enterprise budgets: %w", err)
+		}
+
+		allBudgets = append(allBudgets, result.Budgets...)
+
+		if !result.HasNextPage {
+			break
+		}
+		page++
+	}
+
+	log.Info().
+		Str("enterprise", e.enterprise).
+		Int("budgets", len(allBudgets)).
+		Msg("Successfully fetched enterprise budgets")
+
+	return &EnterpriseBudgets{
+		TotalCount: len(allBudgets),
+		Budgets:    allBudgets,
+		Available:  true,
+	}, nil
+}
+
 // ScanAll retrieves enterprise settings, organization list, and audit log.
 func (e *EnterpriseScanner) ScanAll(ctx context.Context) (*EnterpriseData, error) {
 	log.Info().Str("enterprise", e.enterprise).Msg("Starting enterprise scan")
@@ -382,6 +438,13 @@ func (e *EnterpriseScanner) ScanAll(ctx context.Context) (*EnterpriseData, error
 		log.Warn().Err(err).Str("enterprise", e.enterprise).Msg("Failed to fetch enterprise GHAS settings")
 	} else {
 		data.GHASSettings = ghasSettings
+	}
+
+	budgets, err := e.getBudgets(ctx)
+	if err != nil {
+		log.Warn().Err(err).Str("enterprise", e.enterprise).Msg("Failed to fetch enterprise budgets")
+	} else {
+		data.Budgets = budgets
 	}
 
 	log.Info().

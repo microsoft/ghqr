@@ -33,6 +33,7 @@ var categoryDisplayNames = map[string]string{
 	"maintenance":        "Repository Maintenance",
 	"risk":               "Visibility & Risk Exposure",
 	"features":           "Advanced Security Features",
+	"budget":             "Enterprise Billing — Budget Governance",
 }
 
 // severityEmoji maps severity levels to their display emoji.
