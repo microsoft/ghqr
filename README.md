@@ -297,6 +297,14 @@ Add to your `.vscode/mcp.json`:
 |------|-------------|
 | `scan` | Scan GitHub enterprises, organizations, or repositories for best practices and security recommendations |
 
+MCP `scan` tool accepts these optional array arguments:
+- `enterprises`
+- `organizations`
+- `repositories` (`owner/repo`)
+- `ghes_instances` (GHES hostnames, for example `ghes.example.com`)
+
+When using `ghes_instances`, ensure `GH_TOKEN`/`GITHUB_TOKEN` is valid for all specified instances.
+
 ## Troubleshooting
 
 ### Common Issues

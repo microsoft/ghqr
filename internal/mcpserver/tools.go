@@ -30,9 +30,13 @@ SCOPE CONTROL:
 - If enterprise is specified -> Scans the enterprise and all its organizations
 - If organizations are specified -> Scans only those organizations
 - If repositories are specified -> Scans only those specific repositories
+- If ghes_instances are specified -> Scans those GitHub Enterprise Server hostnames
 
 OUTPUT FORMATS:
 - JSON: Detailed structured data for programmatic analysis
+
+AUTHENTICATION:
+- GH_TOKEN/GITHUB_TOKEN must be valid for all specified GitHub.com/GHES targets
 
 The scan produces comprehensive data that can be used to generate:
 - Security posture assessments
@@ -51,6 +55,10 @@ The scan produces comprehensive data that can be used to generate:
 		mcp.WithArray("repositories",
 			mcp.Items(map[string]any{"type": "string"}),
 			mcp.Description("Optional array of repositories to scan in 'owner/repo' format. Use for targeted repository analysis."),
+		),
+		mcp.WithArray("ghes_instances",
+			mcp.Items(map[string]any{"type": "string"}),
+			mcp.Description("Optional array of GitHub Enterprise Server hostnames (without protocol) to scan. GH_TOKEN/GITHUB_TOKEN must be valid for all specified instances."),
 		),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),

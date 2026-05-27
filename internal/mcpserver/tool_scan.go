@@ -21,6 +21,7 @@ type ScanArgs struct {
 	Enterprises   []string `json:"enterprises,omitempty"`
 	Organizations []string `json:"organizations,omitempty"`
 	Repositories  []string `json:"repositories,omitempty"`
+	GHESInstances []string `json:"ghes_instances,omitempty"`
 }
 
 func scanHandler(ctx context.Context, request mcp.CallToolRequest, args ScanArgs) (*mcp.CallToolResult, error) {
@@ -37,6 +38,7 @@ func scanHandler(ctx context.Context, request mcp.CallToolRequest, args ScanArgs
 		Enterprises:   args.Enterprises,
 		Organizations: args.Organizations,
 		Repositories:  args.Repositories,
+		GHESInstances: args.GHESInstances,
 		OutputName:    outputName,
 	}
 
@@ -44,6 +46,7 @@ func scanHandler(ctx context.Context, request mcp.CallToolRequest, args ScanArgs
 		Strs("enterprises", args.Enterprises).
 		Strs("organizations", args.Organizations).
 		Strs("repositories", args.Repositories).
+		Strs("ghes_instances", args.GHESInstances).
 		Str("output", outputName).
 		Msg("Starting GitHub scan")
 
@@ -63,6 +66,7 @@ func scanHandler(ctx context.Context, request mcp.CallToolRequest, args ScanArgs
 		"enterprises":   args.Enterprises,
 		"organizations": args.Organizations,
 		"repositories":  args.Repositories,
+		"ghes_instances": args.GHESInstances,
 	}
 
 	// Read the report back to return findings inline. A read failure means the
