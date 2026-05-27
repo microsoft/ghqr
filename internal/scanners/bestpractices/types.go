@@ -38,6 +38,11 @@ const (
 	CategoryRisk              = "risk"
 	CategoryDependencies      = "dependencies"
 	CategoryCommunity         = "community"
+	CategoryGHESServer        = "ghes_server"
+	CategoryGHESAuth          = "ghes_authentication"
+	CategoryGHESNetworking    = "ghes_networking"
+	CategoryGHESLicense       = "ghes_license"
+	CategoryGHESInfra         = "ghes_infrastructure"
 )
 
 // Issue represents a finding (issue or recommendation)

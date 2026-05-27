@@ -47,13 +47,13 @@ func generateExecutiveSummaryText(report *renderers.ScanReport, counts map[strin
 
 	return fmt.Sprintf(
 		"> The overall security and best practices posture of this environment **%s**. "+
-			"A total of **%d findings** were identified across %d enterprises, %d organizations, and %d repositories. "+
+			"A total of **%d findings** were identified across %d enterprises, %d GHES instances, %d organizations, and %d repositories. "+
 			"Of these, **%d are critical** and **%d are high severity**, requiring prompt remediation. "+
 			"An additional **%d medium-severity** findings should be addressed within 60 days. "+
 			"The most prevalent area of concern is **%s** with %d findings. "+
 			"The top improvement opportunity is to enable branch protection and Dependabot alerts across all repositories.",
 		posture, total,
-		len(report.Enterprises), len(report.Organizations), len(report.Repositories),
+		len(report.Enterprises), len(report.GHES), len(report.Organizations), len(report.Repositories),
 		critical, high, medium,
 		topCategoryDisplay, topCount,
 	)

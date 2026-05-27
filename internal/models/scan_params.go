@@ -7,6 +7,7 @@ type ScanParams struct {
 	Enterprises   []string
 	Organizations []string
 	Repositories  []string
+	GHESInstances []string
 	OutputName    string
 	Hostname      string
 	Debug         bool
@@ -16,4 +17,12 @@ type ScanParams struct {
 	// loads results from this file and skips all GitHub API scan stages,
 	// re-running only enrichment (evaluation) and report rendering.
 	FromJSON string
+}
+
+func (params *ScanParams) IsReplay() bool {
+	return params.FromJSON != ""
+}
+
+func (params *ScanParams) IsGHESScan() bool {
+	return len(params.GHESInstances) > 0
 }

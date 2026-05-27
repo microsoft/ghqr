@@ -48,9 +48,18 @@ func collectAllFindings(report *renderers.ScanReport) []entityFindings {
 		}
 	}
 
-	// Sort: enterprises first, then orgs, then repos
+	// GHES instance findings
+	for name, data := range report.GHES {
+		ef := entityFindings{EntityName: name, EntityType: "ghes"}
+		ef.Findings = append(ef.Findings, extractRecommendations(data, "evaluation")...)
+		if len(ef.Findings) > 0 {
+			all = append(all, ef)
+		}
+	}
+
+	// Sort: enterprises first, then GHES instances, then orgs, then repos
 	sort.Slice(all, func(i, j int) bool {
-		typeOrder := map[string]int{"enterprise": 0, "org": 1, "repo": 2}
+		typeOrder := map[string]int{"enterprise": 0, "ghes": 1, "org": 2, "repo": 3}
 		if typeOrder[all[i].EntityType] != typeOrder[all[j].EntityType] {
 			return typeOrder[all[i].EntityType] < typeOrder[all[j].EntityType]
 		}
@@ -112,6 +121,11 @@ func determineScopeName(report *renderers.ScanReport) (string, string) {
 	if len(report.Enterprises) > 0 {
 		for name := range report.Enterprises {
 			return name, "Enterprise"
+		}
+	}
+	if len(report.GHES) > 0 {
+		for name := range report.GHES {
+			return name, "GHES Instance"
 		}
 	}
 	if len(report.Organizations) > 0 {

@@ -26,16 +26,18 @@ type ScanReport struct {
 	Enterprises   map[string]interface{} `json:"enterprises,omitempty"`
 	Organizations map[string]interface{} `json:"organizations,omitempty"`
 	Repositories  map[string]interface{} `json:"repositories,omitempty"`
+	GHES          map[string]interface{} `json:"ghes,omitempty"`
 }
 
 // RenderJSON writes a consolidated JSON report from the results map.
-// Keys in results follow: "enterprise:<slug>", "organization:<name>", "repository:<owner>/<repo>".
+// Keys in results follow: "enterprise:<slug>", "organization:<name>", "repository:<owner>/<repo>", "ghes:<hostname>".
 func RenderJSON(results map[string]interface{}, outputName string) (string, error) {
 	report := &ScanReport{
 		GeneratedAt:   time.Now().UTC().Format(time.RFC3339),
 		Enterprises:   make(map[string]interface{}),
 		Organizations: make(map[string]interface{}),
 		Repositories:  make(map[string]interface{}),
+		GHES:          make(map[string]interface{}),
 	}
 
 	// First pass: populate entity maps.
@@ -47,6 +49,8 @@ func RenderJSON(results map[string]interface{}, outputName string) (string, erro
 			report.Organizations[strings.TrimPrefix(key, "organization:")] = data
 		case strings.HasPrefix(key, "repository:"):
 			report.Repositories[strings.TrimPrefix(key, "repository:")] = data
+		case strings.HasPrefix(key, "ghes:"):
+			report.GHES[strings.TrimPrefix(key, "ghes:")] = data
 		}
 	}
 
@@ -66,6 +70,7 @@ func RenderJSON(results map[string]interface{}, outputName string) (string, erro
 		{"evaluation:enterprise_security_alerts:", "enterprise_security_alerts_evaluation", report.Enterprises},
 		{"evaluation:enterprise_budgets:", "enterprise_budgets_evaluation", report.Enterprises},
 		{"evaluation:metadata:", "metadata_evaluation", report.Repositories},
+		{"evaluation:ghes:", "evaluation", report.GHES},
 	}
 	for key, eval := range results {
 		for _, m := range mappings {

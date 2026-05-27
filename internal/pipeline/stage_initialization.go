@@ -28,16 +28,16 @@ func (s *InitializationStage) Execute(ctx *ScanContext) error {
 
 	hostname := ctx.Params.Hostname
 
-	clients, err := config.NewClients(ctx.Ctx, hostname)
+	clients, err := config.NewClients(ctx.Ctx, config.WithHostname(hostname))
 	if err != nil {
 		return fmt.Errorf("failed to create GitHub clients: %w", err)
 	}
-	ctx.Clients = clients
+	ctx.Clients[primaryClientKey] = clients
 
 	graphqlEndpoint := config.GraphQLEndpoint(hostname)
-	ctx.GraphQLScanner = scanners.NewGraphQLClient(clients.GraphQL, clients.HTTP, graphqlEndpoint)
+	ctx.GraphQLClients[primaryClientKey] = scanners.NewGraphQLClient(clients.GraphQL, clients.HTTP, graphqlEndpoint)
 
-	user, _, err := ctx.Clients.REST.Users.Get(ctx.Ctx, "")
+	user, _, err := ctx.Clients[primaryClientKey].REST.Users.Get(ctx.Ctx, "")
 	if err != nil {
 		return fmt.Errorf("GitHub authentication failed: %w", err)
 	}
@@ -47,6 +47,6 @@ func (s *InitializationStage) Execute(ctx *ScanContext) error {
 }
 
 func (s *InitializationStage) Skip(ctx *ScanContext) bool {
-	// Skip GitHub authentication and client setup when replaying from a JSON file.
-	return ctx.Params != nil && ctx.Params.FromJSON != ""
+	// Skip GitHub authentication and client setup when replaying from JSON or when no github.com targets are specified (i.e. GHES-only scan).
+	return ctx.Params.IsReplay() || ctx.Params.IsGHESScan()
 }

@@ -22,11 +22,6 @@ func NewEnterpriseDiscoveryStage() *EnterpriseDiscoveryStage {
 }
 
 func (s *EnterpriseDiscoveryStage) Execute(ctx *ScanContext) error {
-	if ctx.Clients.GraphQL == nil {
-		log.Warn().Msg("GraphQL client not available - skipping enterprise discovery")
-		return nil
-	}
-
 	log.Info().Msg("Discovering enterprises for authenticated user...")
 
 	var query struct {
@@ -43,23 +38,26 @@ func (s *EnterpriseDiscoveryStage) Execute(ctx *ScanContext) error {
 		}
 	}
 
-	var cursor *githubv4.String
-	for {
-		variables := map[string]interface{}{
-			"cursor": cursor,
+	for _, client := range ctx.Clients {
+		var cursor *githubv4.String
+		for {
+			variables := map[string]interface{}{
+				"cursor": cursor,
+			}
+			if err := client.GraphQL.Query(ctx.Ctx, &query, variables); err != nil {
+				log.Warn().Err(err).Msg("Failed to discover enterprises - account may not have enterprise admin access")
+				return nil
+			}
+
+			for _, node := range query.Viewer.Enterprises.Nodes {
+				ctx.Params.Enterprises = append(ctx.Params.Enterprises, string(node.Slug))
+			}
+			if !bool(query.Viewer.Enterprises.PageInfo.HasNextPage) {
+				break
+			}
+			c := query.Viewer.Enterprises.PageInfo.EndCursor
+			cursor = &c
 		}
-		if err := ctx.Clients.GraphQL.Query(ctx.Ctx, &query, variables); err != nil {
-			log.Warn().Err(err).Msg("Failed to discover enterprises - account may not have enterprise admin access")
-			return nil
-		}
-		for _, node := range query.Viewer.Enterprises.Nodes {
-			ctx.Params.Enterprises = append(ctx.Params.Enterprises, string(node.Slug))
-		}
-		if !bool(query.Viewer.Enterprises.PageInfo.HasNextPage) {
-			break
-		}
-		c := query.Viewer.Enterprises.PageInfo.EndCursor
-		cursor = &c
 	}
 
 	if len(ctx.Params.Enterprises) == 0 {
@@ -76,9 +74,8 @@ func (s *EnterpriseDiscoveryStage) Execute(ctx *ScanContext) error {
 }
 
 func (s *EnterpriseDiscoveryStage) Skip(ctx *ScanContext) bool {
-	// Skip auto-discovery when the user explicitly specified enterprises, organizations, or repositories,
-	// or when replaying from a JSON file.
-	return ctx.Params.FromJSON != "" ||
+	// Skip auto-discovery w
+	return ctx.Params.IsReplay() ||
 		len(ctx.Params.Enterprises) > 0 ||
 		len(ctx.Params.Organizations) > 0 ||
 		len(ctx.Params.Repositories) > 0

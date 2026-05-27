@@ -68,3 +68,45 @@ func TestRESTBaseURL(t *testing.T) {
 		})
 	}
 }
+
+func TestGHESToken_Precedence(t *testing.T) {
+	// GH_TOKEN only -> returned as-is.
+	t.Setenv("GH_TOKEN", "gh")
+	t.Setenv("GITHUB_TOKEN", "")
+	got, err := ghToken()
+	if err != nil {
+		t.Fatalf("ghToken() unexpected error: %v", err)
+	}
+	if got != "gh" {
+		t.Errorf("ghToken() = %q, want %q", got, "gh")
+	}
+
+	// GH_TOKEN takes precedence over GITHUB_TOKEN.
+	t.Setenv("GH_TOKEN", "gh")
+	t.Setenv("GITHUB_TOKEN", "github")
+	got, err = ghToken()
+	if err != nil {
+		t.Fatalf("ghToken() unexpected error: %v", err)
+	}
+	if got != "gh" {
+		t.Errorf("ghToken() = %q, want %q (GH_TOKEN should win)", got, "gh")
+	}
+
+	// GITHUB_TOKEN only -> returned as fallback.
+	t.Setenv("GH_TOKEN", "")
+	t.Setenv("GITHUB_TOKEN", "github")
+	got, err = ghToken()
+	if err != nil {
+		t.Fatalf("ghToken() unexpected error: %v", err)
+	}
+	if got != "github" {
+		t.Errorf("ghToken() = %q, want %q", got, "github")
+	}
+
+	// Nothing set -> error.
+	t.Setenv("GH_TOKEN", "")
+	t.Setenv("GITHUB_TOKEN", "")
+	if _, err = ghToken(); err == nil {
+		t.Error("ghToken() expected error when no token is set, got nil")
+	}
+}

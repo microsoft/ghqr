@@ -1,0 +1,164 @@
+- id: ghes-actions-001
+  scope: ghes
+  title: GitHub Actions is not enabled on the GHES instance
+  category: actions
+  severity: medium
+  description: The management API observed actions_enabled=false and the Actions API responded as available, so this is a real disabled state rather than an unsupported endpoint.
+  recommendation: Consider enabling GitHub Actions for CI/CD workflows. Ensure self-hosted runners are properly secured
+  learnMore: https://docs.github.com/en/enterprise-server/admin/github-actions/enabling-github-actions-for-github-enterprise-server/getting-started-with-github-actions-for-github-enterprise-server
+  tags: [ghes, actions]
+  enabled: true
+
+- id: ghes-actions-002
+  scope: ghes
+  title: GitHub Actions is enabled on the GHES instance
+  category: actions
+  severity: info
+  description: Reports that Actions is enabled. Operators should ensure self-hosted runners follow GitHub's hardening guidance.
+  recommendation: Ensure self-hosted runners are isolated, hardened, and do not run on the GHES appliance itself. Use ephemeral runners where possible
+  learnMore: https://docs.github.com/en/enterprise-server/admin/github-actions/managing-self-hosted-runners-for-your-enterprise
+  tags: [ghes, actions, runners]
+  enabled: true
+
+- id: ghes-actions-003
+  scope: ghes
+  title: GitHub Actions status could not be confirmed on this GHES instance
+  category: actions
+  severity: info
+  description: The /enterprises/actions/permissions endpoint did not respond. The setting reads as disabled but cannot be interpreted as a real misconfiguration without confirming the endpoint exists.
+  recommendation: A non-2xx response can mean (a) the feature is not supported on this GHES version, (b) the feature exists but is not licensed or enabled at the appliance level, or (c) the scanning token lacks the required scope. Verify which case applies before treating this as a misconfiguration
+  learnMore: https://docs.github.com/en/enterprise-server/admin/github-actions/enabling-github-actions-for-github-enterprise-server/getting-started-with-github-actions-for-github-enterprise-server
+  tags: [ghes, actions, unconfirmed]
+  enabled: true
+
+- id: ghes-infra-001
+  scope: ghes
+  title: Administrative SSH access is enabled on the GHES instance
+  category: ghes_infrastructure
+  severity: medium
+  description: Administrative SSH access is enabled. Restrict this to specific IP ranges and rotate keys regularly.
+  recommendation: Review SSH access policies. Consider restricting SSH access to specific IP ranges and ensure SSH keys are regularly rotated
+  learnMore: https://docs.github.com/en/enterprise-server/admin/administration/accessing-the-administrative-shell-ssh
+  tags: [ghes, infrastructure, ssh]
+  enabled: true
+
+- id: ghes-infra-002
+  scope: ghes
+  title: GHES management settings could not be read; configuration checks were skipped
+  category: ghes_infrastructure
+  severity: info
+  description: /manage/v1/config/settings was unreachable, so subdomain-isolation / private-mode / GHAS-enablement and related checks could not be evaluated. The evaluator deliberately suppresses Critical/High settings findings in this state to avoid false positives.
+  recommendation: Provide a site-admin token with access to /manage/v1/config/settings so subdomain isolation, private mode, GHAS enablement, and related checks can run
+  learnMore: https://docs.github.com/en/enterprise-server/admin/configuration/configuring-your-enterprise/about-enterprise-configuration
+  tags: [ghes, infrastructure, settings, unavailable]
+  enabled: true
+
+- id: ghes-infra-003
+  scope: ghes
+  title: Audit log forwarding configuration cannot be verified automatically
+  category: security
+  severity: high
+  description: GHES audit log forwarding (syslog) is not observable through the standard REST API. This finding is always emitted as a manual-check reminder.
+  recommendation: Manually verify that audit log forwarding (syslog) is enabled and targeting a SIEM or secure log aggregation service (Site Admin → Monitoring → Log forwarding)
+  learnMore: https://docs.github.com/en/enterprise-server/admin/monitoring-activity-in-your-enterprise/exploring-user-activity-in-your-enterprise/log-forwarding
+  tags: [ghes, audit_log, manual]
+  enabled: true
+
+- id: ghes-infra-004
+  scope: ghes
+  title: GHES backup configuration cannot be verified automatically
+  category: ghes_infrastructure
+  severity: high
+  description: GitHub Enterprise Server Backup Utilities (backup-utils) state is not observable through the REST API. This finding is always emitted as a manual-check reminder.
+  recommendation: Manually verify that GitHub Enterprise Server Backup Utilities (backup-utils) are configured, run on a schedule, and tested regularly for restoration
+  learnMore: https://docs.github.com/en/enterprise-server/admin/backing-up-and-restoring-your-instance/configuring-backups-on-your-instance
+  tags: [ghes, infrastructure, backup, manual]
+  enabled: true
+
+- id: ghes-infra-005
+  scope: ghes
+  title: High availability (HA) replica configuration cannot be verified automatically
+  category: ghes_infrastructure
+  severity: medium
+  description: HA / replica configuration is not observable through the REST API. This finding is always emitted as a manual-check reminder.
+  recommendation: Manually verify that a replica is configured for failover if high availability is required for your deployment
+  learnMore: https://docs.github.com/en/enterprise-server/admin/monitoring-and-managing-your-instance/configuring-high-availability/about-high-availability-configuration
+  tags: [ghes, infrastructure, ha, manual]
+  enabled: true
+
+- id: ghes-stats-001
+  scope: ghes
+  title: GHES user population summary
+  category: ghes_server
+  severity: info
+  description: Reports total users, admin count, and suspended count from /enterprise/stats/all.
+  recommendation: Regularly audit user accounts and admin access
+  learnMore: https://docs.github.com/en/enterprise-server/admin/managing-accounts-and-repositories/managing-users-in-your-enterprise/auditing-users-across-your-enterprise
+  tags: [ghes, stats, users]
+  enabled: true
+
+- id: ghes-stats-002
+  scope: ghes
+  title: GHES organization summary
+  category: ghes_server
+  severity: info
+  description: Reports total organisations and teams from /enterprise/stats/all.
+  recommendation: Monitor organization growth and ensure governance policies are enforced
+  learnMore: https://docs.github.com/en/enterprise-server/admin/managing-accounts-and-repositories/managing-organizations-in-your-enterprise
+  tags: [ghes, stats, organizations]
+  enabled: true
+
+- id: ghes-stats-003
+  scope: ghes
+  title: GHES repository summary
+  category: ghes_server
+  severity: info
+  description: Reports total repositories (root and forks) from /enterprise/stats/all.
+  recommendation: Monitor repository growth and storage consumption
+  learnMore: https://docs.github.com/en/enterprise-server/admin/monitoring-and-managing-your-instance/monitoring-your-instance/about-the-monitor-dashboard
+  tags: [ghes, stats, repositories]
+  enabled: true
+
+- id: ghes-stats-004
+  scope: ghes
+  title: Disabled organisations present on the GHES instance
+  category: ghes_server
+  severity: low
+  description: One or more disabled organisations exist. These usually represent stale tenants and should be reviewed.
+  recommendation: Review disabled organizations and consider removing them if no longer needed
+  learnMore: https://docs.github.com/en/enterprise-server/admin/managing-accounts-and-repositories/managing-organizations-in-your-enterprise
+  tags: [ghes, stats, organizations]
+  enabled: true
+
+- id: ghes-stats-005
+  scope: ghes
+  title: High number of site administrators on the GHES instance
+  category: access_control
+  severity: high
+  description: A large number of users have site_admin privileges on the appliance. Each site admin can promote others, modify settings, and access any repository — keep the count to the minimum number of trusted operators.
+  recommendation: Limit site admin access to the minimum number of trusted administrators. Follow the principle of least privilege
+  learnMore: https://docs.github.com/en/enterprise-server/admin/managing-accounts-and-repositories/managing-users-in-your-enterprise/promoting-or-demoting-a-site-administrator
+  tags: [ghes, stats, admins, access_control]
+  enabled: true
+
+- id: ghes-audit-001
+  scope: ghes
+  title: Suspicious audit log events detected
+  category: security
+  severity: critical
+  description: One or more audit log events in the suspicious-action list (repo.destroy / staff.fake_login / staff.set_site_admin / org.delete / etc) were found in the recent window.
+  recommendation: Review these events in the GHES site admin audit log immediately. Actions like repo.destroy, staff.fake_login, and staff.set_site_admin can indicate account compromise or insider threats
+  learnMore: https://docs.github.com/en/enterprise-server/admin/monitoring-activity-in-your-enterprise/reviewing-audit-logs-for-your-enterprise/about-the-audit-log-for-your-enterprise
+  tags: [ghes, audit_log, suspicious]
+  enabled: true
+
+- id: ghes-audit-002
+  scope: ghes
+  title: No suspicious audit log events detected
+  category: security
+  severity: info
+  description: No events from the suspicious-action list were found in the recent window.
+  recommendation: Continue monitoring the audit log regularly. Configure log forwarding to a SIEM for centralized monitoring
+  learnMore: https://docs.github.com/en/enterprise-server/admin/monitoring-activity-in-your-enterprise/exploring-user-activity-in-your-enterprise/log-forwarding
+  tags: [ghes, audit_log]
+  enabled: true

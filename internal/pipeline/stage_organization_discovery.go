@@ -25,17 +25,20 @@ func (s *OrganizationDiscoveryStage) Execute(ctx *ScanContext) error {
 	log.Info().Msg("Discovering organizations for authenticated user...")
 
 	var orgs []*github.Organization
-	opts := &github.ListOptions{PerPage: 100}
-	for {
-		page, resp, err := ctx.Clients.REST.Organizations.List(ctx.Ctx, "", opts)
-		if err != nil {
-			return err
+
+	for _, client := range ctx.Clients {
+		opts := &github.ListOptions{PerPage: 100}
+		for {
+			page, resp, err := client.REST.Organizations.List(ctx.Ctx, "", opts)
+			if err != nil {
+				return err
+			}
+			orgs = append(orgs, page...)
+			if resp.NextPage == 0 {
+				break
+			}
+			opts.Page = resp.NextPage
 		}
-		orgs = append(orgs, page...)
-		if resp.NextPage == 0 {
-			break
-		}
-		opts.Page = resp.NextPage
 	}
 
 	if len(orgs) == 0 {
@@ -56,9 +59,7 @@ func (s *OrganizationDiscoveryStage) Execute(ctx *ScanContext) error {
 }
 
 func (s *OrganizationDiscoveryStage) Skip(ctx *ScanContext) bool {
-	// Skip auto-discovery when organizations are already specified, when only specific
-	// repositories were requested, or when replaying from a JSON file.
-	return ctx.Params.FromJSON != "" ||
+	return ctx.Params.IsReplay() ||
 		len(ctx.Params.Organizations) > 0 ||
 		len(ctx.Params.Repositories) > 0
 }

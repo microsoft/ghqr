@@ -1,0 +1,175 @@
+- id: ghes-sec-001
+  scope: ghes
+  title: GitHub Advanced Security (GHAS) is not enabled on the GHES instance
+  category: security
+  severity: high
+  description: The management API reports advanced_security_enabled=false. Without GHAS, code scanning, secret scanning, and dependency review are unavailable across all organisations on the appliance.
+  recommendation: Enable GHAS to unlock code scanning, secret scanning, and dependency review across all organizations
+  learnMore: https://docs.github.com/en/enterprise-server/admin/code-security/managing-github-advanced-security-for-your-enterprise/enabling-github-advanced-security-for-your-enterprise
+  tags: [ghes, security, ghas]
+  enabled: true
+
+- id: ghes-sec-002
+  scope: ghes
+  title: Secret scanning is not enabled on the GHES instance
+  category: security
+  severity: high
+  description: The management API observed secret_scanning_enabled=false. The corresponding API endpoint is reachable, so this is a real configuration gap rather than an unsupported feature.
+  recommendation: Enable secret scanning to detect leaked credentials in repositories
+  learnMore: https://docs.github.com/en/enterprise-server/admin/code-security/managing-github-advanced-security-for-your-enterprise/configuring-secret-scanning-for-your-appliance
+  tags: [ghes, security, secret_scanning]
+  enabled: true
+
+- id: ghes-sec-003
+  scope: ghes
+  title: Secret scanning status could not be confirmed on this GHES instance
+  category: security
+  severity: info
+  description: The /enterprises/secret-scanning/alerts endpoint did not respond. The setting reads as disabled but cannot be interpreted as a real misconfiguration without confirming the endpoint exists.
+  recommendation: A non-2xx response can mean (a) the feature is not supported on this GHES version, (b) the feature exists but is not licensed or enabled at the appliance level, or (c) the scanning token lacks the required scope. Verify which case applies before treating this as a misconfiguration
+  learnMore: https://docs.github.com/en/enterprise-server/admin/code-security/managing-github-advanced-security-for-your-enterprise/configuring-secret-scanning-for-your-appliance
+  tags: [ghes, security, secret_scanning, unconfirmed]
+  enabled: true
+
+- id: ghes-sec-004
+  scope: ghes
+  title: Secret scanning push protection is not enabled
+  category: security
+  severity: high
+  description: The management API observed secret_scanning_push_protection=false. Commits containing secrets can still be pushed to repositories before the alert fires.
+  recommendation: Enable push protection to block commits containing secrets before they reach the repository
+  learnMore: https://docs.github.com/en/enterprise-server/admin/code-security/managing-github-advanced-security-for-your-enterprise/configuring-secret-scanning-for-your-appliance
+  tags: [ghes, security, secret_scanning, push_protection]
+  enabled: true
+
+- id: ghes-sec-005
+  scope: ghes
+  title: Code scanning is not enabled on the GHES instance
+  category: security
+  severity: high
+  description: The management API observed code_scanning_enabled=false. The corresponding API endpoint is reachable, so this is a real configuration gap.
+  recommendation: Enable code scanning (CodeQL) to automatically find security vulnerabilities in code
+  learnMore: https://docs.github.com/en/enterprise-server/admin/code-security/managing-github-advanced-security-for-your-enterprise/configuring-code-scanning-for-your-appliance
+  tags: [ghes, security, code_scanning]
+  enabled: true
+
+- id: ghes-sec-006
+  scope: ghes
+  title: Code scanning status could not be confirmed on this GHES instance
+  category: security
+  severity: info
+  description: The /enterprises/code-scanning/alerts endpoint did not respond. The setting reads as disabled but cannot be interpreted as a real misconfiguration without confirming the endpoint exists.
+  recommendation: A non-2xx response can mean (a) the feature is not supported on this GHES version, (b) the feature exists but is not licensed or enabled at the appliance level, or (c) the scanning token lacks the required scope. Verify which case applies before treating this as a misconfiguration
+  learnMore: https://docs.github.com/en/enterprise-server/admin/code-security/managing-github-advanced-security-for-your-enterprise/configuring-code-scanning-for-your-appliance
+  tags: [ghes, security, code_scanning, unconfirmed]
+  enabled: true
+
+- id: ghes-sec-007
+  scope: ghes
+  title: Critical Dependabot alerts open across the GHES instance
+  category: dependencies
+  severity: critical
+  description: One or more critical-severity Dependabot alerts are currently open enterprise-wide.
+  recommendation: Immediately remediate critical dependency vulnerabilities across all organizations
+  learnMore: https://docs.github.com/en/enterprise-server/code-security/dependabot/dependabot-alerts/about-dependabot-alerts
+  tags: [ghes, security, dependabot]
+  enabled: true
+
+- id: ghes-sec-008
+  scope: ghes
+  title: High-severity Dependabot alerts open across the GHES instance
+  category: dependencies
+  severity: high
+  description: One or more high-severity Dependabot alerts are open enterprise-wide.
+  recommendation: Prioritize fixing high-severity dependency vulnerabilities
+  learnMore: https://docs.github.com/en/enterprise-server/code-security/dependabot/dependabot-alerts/about-dependabot-alerts
+  tags: [ghes, security, dependabot]
+  enabled: true
+
+- id: ghes-sec-009
+  scope: ghes
+  title: Code scanning alerts open across the GHES instance
+  category: security
+  severity: high
+  description: One or more open code scanning alerts are reported by the appliance-wide endpoint.
+  recommendation: Review and address open code scanning findings
+  learnMore: https://docs.github.com/en/enterprise-server/code-security/code-scanning
+  tags: [ghes, security, code_scanning]
+  enabled: true
+
+- id: ghes-sec-010
+  scope: ghes
+  title: Secret scanning alerts open across the GHES instance
+  category: security
+  severity: critical
+  description: Open secret-scanning alerts indicate exposed credentials in repositories. These should be rotated immediately regardless of remediation status.
+  recommendation: Immediately revoke and rotate any exposed secrets
+  learnMore: https://docs.github.com/en/enterprise-server/code-security/secret-scanning
+  tags: [ghes, security, secret_scanning]
+  enabled: true
+
+- id: ghes-sec-011
+  scope: ghes
+  title: Dependabot alerts are not enabled on the GHES instance
+  category: dependencies
+  severity: high
+  description: The management API observed dependabot_alerts_enabled=false. The corresponding API endpoint is reachable, so this is a real configuration gap.
+  recommendation: Enable Dependabot alerts to receive notifications about vulnerable dependencies
+  learnMore: https://docs.github.com/en/enterprise-server/admin/configuration/configuring-github-connect/enabling-dependabot-for-your-enterprise
+  tags: [ghes, dependencies, dependabot]
+  enabled: true
+
+- id: ghes-sec-012
+  scope: ghes
+  title: Dependabot alerts status could not be confirmed on this GHES instance
+  category: dependencies
+  severity: info
+  description: The /enterprises/dependabot/alerts endpoint did not respond. The setting reads as disabled but cannot be interpreted as a real misconfiguration without confirming the endpoint exists.
+  recommendation: A non-2xx response can mean (a) the feature is not supported on this GHES version, (b) the feature exists but is not licensed or enabled at the appliance level, or (c) the scanning token lacks the required scope. Verify which case applies before treating this as a misconfiguration
+  learnMore: https://docs.github.com/en/enterprise-server/admin/configuration/configuring-github-connect/enabling-dependabot-for-your-enterprise
+  tags: [ghes, dependencies, dependabot, unconfirmed]
+  enabled: true
+
+- id: ghes-sec-013
+  scope: ghes
+  title: Dependabot security updates are not enabled on the GHES instance
+  category: dependencies
+  severity: medium
+  description: The management API observed dependabot_updates_enabled=false. Vulnerable dependencies are detected but no automated remediation PRs are created.
+  recommendation: Enable Dependabot security updates to automatically create PRs that fix vulnerable dependencies
+  learnMore: https://docs.github.com/en/enterprise-server/admin/configuration/configuring-github-connect/enabling-dependabot-for-your-enterprise
+  tags: [ghes, dependencies, dependabot]
+  enabled: true
+
+- id: ghes-sec-014
+  scope: ghes
+  title: Dependabot alerts API could not be confirmed on this GHES instance
+  category: dependencies
+  severity: info
+  description: The /enterprises/dependabot/alerts endpoint did not respond when probed. Enterprise-wide Dependabot alert aggregation is unavailable.
+  recommendation: A non-2xx response can mean (a) the feature is not supported on this GHES version, (b) the feature exists but is not licensed or enabled at the appliance level, or (c) the scanning token lacks the required scope. Verify which case applies before treating this as a misconfiguration
+  learnMore: https://docs.github.com/en/enterprise-server/admin/configuration/configuring-github-connect/enabling-dependabot-for-your-enterprise
+  tags: [ghes, dependencies, dependabot, unconfirmed]
+  enabled: true
+
+- id: ghes-sec-015
+  scope: ghes
+  title: Code scanning alerts API could not be confirmed on this GHES instance
+  category: security
+  severity: info
+  description: The /enterprises/code-scanning/alerts endpoint did not respond when probed. Enterprise-wide code-scanning aggregation is unavailable.
+  recommendation: A non-2xx response can mean (a) the feature is not supported on this GHES version, (b) the feature exists but is not licensed or enabled at the appliance level, or (c) the scanning token lacks the required scope. Verify which case applies before treating this as a misconfiguration
+  learnMore: https://docs.github.com/en/enterprise-server/admin/code-security/managing-github-advanced-security-for-your-enterprise/configuring-code-scanning-for-your-appliance
+  tags: [ghes, security, code_scanning, unconfirmed]
+  enabled: true
+
+- id: ghes-sec-016
+  scope: ghes
+  title: Secret scanning alerts API could not be confirmed on this GHES instance
+  category: security
+  severity: info
+  description: The /enterprises/secret-scanning/alerts endpoint did not respond when probed. Enterprise-wide secret-scanning aggregation is unavailable.
+  recommendation: A non-2xx response can mean (a) the feature is not supported on this GHES version, (b) the feature exists but is not licensed or enabled at the appliance level, or (c) the scanning token lacks the required scope. Verify which case applies before treating this as a misconfiguration
+  learnMore: https://docs.github.com/en/enterprise-server/admin/code-security/managing-github-advanced-security-for-your-enterprise/configuring-secret-scanning-for-your-appliance
+  tags: [ghes, security, secret_scanning, unconfirmed]
+  enabled: true

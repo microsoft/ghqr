@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/microsoft/ghqr/internal/scanners"
 	"github.com/rs/zerolog/log"
 )
 
@@ -59,6 +60,7 @@ func (s *LoadFromJSONStage) Execute(ctx *ScanContext) error {
 		Enterprises   map[string]interface{} `json:"enterprises"`
 		Organizations map[string]interface{} `json:"organizations"`
 		Repositories  map[string]interface{} `json:"repositories"`
+		GHES          map[string]interface{} `json:"ghes"`
 	}
 	if err := json.Unmarshal(data, &report); err != nil {
 		return fmt.Errorf("failed to parse --from-json file %q: %w", path, err)
@@ -66,10 +68,11 @@ func (s *LoadFromJSONStage) Execute(ctx *ScanContext) error {
 
 	loaded := loadEntities(ctx, "enterprise:", report.Enterprises) +
 		loadEntities(ctx, "organization:", report.Organizations) +
-		loadEntities(ctx, "repository:", report.Repositories)
+		loadEntities(ctx, "repository:", report.Repositories) +
+		loadGHES(ctx, report.GHES)
 
 	if loaded == 0 {
-		return fmt.Errorf("no entities found in %q (expected 'enterprises', 'organizations', or 'repositories' keys)", path)
+		return fmt.Errorf("no entities found in %q (expected 'enterprises', 'organizations', 'repositories', or 'ghes' keys)", path)
 	}
 
 	// Warn once about lossy fields that the JSON renderer compacts on output.
@@ -86,8 +89,42 @@ func (s *LoadFromJSONStage) Execute(ctx *ScanContext) error {
 		Int("enterprises", len(report.Enterprises)).
 		Int("organizations", len(report.Organizations)).
 		Int("repositories", len(report.Repositories)).
+		Int("ghes_instances", len(report.GHES)).
 		Msg("Replay data loaded")
 	return nil
+}
+
+// loadGHES deserialises each GHES instance entry from the replay JSON back
+// into a *scanners.GHESData so the evaluator (which keys on the concrete
+// type) sees it the same way as a live scan. The embedded evaluation field
+// is stripped first so a replay does not nest evaluations.
+func loadGHES(ctx *ScanContext, ghes map[string]interface{}) int {
+	count := 0
+	for hostname, raw := range ghes {
+		m, ok := raw.(map[string]interface{})
+		if !ok {
+			log.Warn().Str("hostname", hostname).Msg("Skipping GHES entry with unexpected JSON shape")
+			continue
+		}
+		for _, field := range embeddedEvalFields {
+			delete(m, field)
+		}
+		// Round-trip via JSON so *bool tri-state fields and the
+		// GHESLicenseSeats custom unmarshaller are honoured.
+		buf, err := json.Marshal(m)
+		if err != nil {
+			log.Warn().Err(err).Str("hostname", hostname).Msg("Skipping GHES entry: cannot re-marshal")
+			continue
+		}
+		var data scanners.GHESData
+		if err := json.Unmarshal(buf, &data); err != nil {
+			log.Warn().Err(err).Str("hostname", hostname).Msg("Skipping GHES entry: cannot deserialise into GHESData")
+			continue
+		}
+		ctx.Results["ghes:"+hostname] = &data
+		count++
+	}
+	return count
 }
 
 func loadEntities(ctx *ScanContext, prefix string, entities map[string]interface{}) int {
@@ -109,5 +146,5 @@ func loadEntities(ctx *ScanContext, prefix string, entities map[string]interface
 
 // Skip returns true when --from-json is not supplied.
 func (s *LoadFromJSONStage) Skip(ctx *ScanContext) bool {
-	return ctx.Params == nil || ctx.Params.FromJSON == ""
+	return !ctx.Params.IsReplay()
 }

@@ -49,26 +49,29 @@ func (s *EnterpriseScanStage) Execute(ctx *ScanContext) error {
 func (s *EnterpriseScanStage) scanEnterprise(ctx *ScanContext, enterprise string) error {
 	log.Info().Str("enterprise", enterprise).Msg("Scanning enterprise")
 
-	scanner := scanners.NewEnterpriseScanner(ctx.Clients.GraphQL, ctx.Clients.REST, enterprise)
-	data, err := scanner.ScanAll(ctx.Ctx)
-	if err != nil {
-		return fmt.Errorf("scan failed: %w", err)
+	for _, client := range ctx.Clients {
+
+		scanner := scanners.NewEnterpriseScanner(client.GraphQL, client.REST, enterprise)
+		data, err := scanner.ScanAll(ctx.Ctx)
+		if err != nil {
+			return fmt.Errorf("scan failed: %w", err)
+		}
+
+		ctx.Results[fmt.Sprintf("enterprise:%s", enterprise)] = data
+
+		// Feed discovered org names into ctx.Params.Organizations so OrganizationScanStage picks them up.
+		// Also record which enterprise owns each org in ctx.Ownership.
+		orgNames := s.extractOrganizationNames(data)
+		ctx.Params.Organizations = append(ctx.Params.Organizations, orgNames...)
+		for _, orgName := range orgNames {
+			ctx.Ownership[fmt.Sprintf("organization:%s", orgName)] = enterprise
+		}
+
+		log.Info().
+			Str("enterprise", enterprise).
+			Int("organizations_detected", len(data.Organizations)).
+			Msg("Enterprise scan completed successfully")
 	}
-
-	ctx.Results[fmt.Sprintf("enterprise:%s", enterprise)] = data
-
-	// Feed discovered org names into ctx.Params.Organizations so OrganizationScanStage picks them up.
-	// Also record which enterprise owns each org in ctx.Ownership.
-	orgNames := s.extractOrganizationNames(data)
-	ctx.Params.Organizations = append(ctx.Params.Organizations, orgNames...)
-	for _, orgName := range orgNames {
-		ctx.Ownership[fmt.Sprintf("organization:%s", orgName)] = enterprise
-	}
-
-	log.Info().
-		Str("enterprise", enterprise).
-		Int("organizations_detected", len(data.Organizations)).
-		Msg("Enterprise scan completed successfully")
 
 	return nil
 }

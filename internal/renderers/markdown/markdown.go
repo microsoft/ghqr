@@ -44,6 +44,7 @@ func buildScanReport(results map[string]interface{}) *renderers.ScanReport {
 		Enterprises:   make(map[string]interface{}),
 		Organizations: make(map[string]interface{}),
 		Repositories:  make(map[string]interface{}),
+		GHES:          make(map[string]interface{}),
 	}
 
 	for key, data := range results {
@@ -54,6 +55,8 @@ func buildScanReport(results map[string]interface{}) *renderers.ScanReport {
 			report.Organizations[strings.TrimPrefix(key, "organization:")] = data
 		case strings.HasPrefix(key, "repository:"):
 			report.Repositories[strings.TrimPrefix(key, "repository:")] = data
+		case strings.HasPrefix(key, "ghes:"):
+			report.GHES[strings.TrimPrefix(key, "ghes:")] = data
 		}
 	}
 
@@ -73,6 +76,7 @@ func buildScanReport(results map[string]interface{}) *renderers.ScanReport {
 		{"evaluation:enterprise_security_alerts:", "enterprise_security_alerts_evaluation", report.Enterprises},
 		{"evaluation:enterprise_budgets:", "enterprise_budgets_evaluation", report.Enterprises},
 		{"evaluation:metadata:", "metadata_evaluation", report.Repositories},
+		{"evaluation:ghes:", "evaluation", report.GHES},
 	}
 	for key, eval := range results {
 		for _, m := range mappings {

@@ -1,0 +1,98 @@
+- id: ghes-auth-001
+  scope: ghes
+  title: Password authentication is enabled on the GHES instance
+  category: ghes_authentication
+  severity: high
+  description: /meta reports verifiable_password_authentication=true, meaning username/password sign-in is accepted alongside any configured SSO.
+  recommendation: Consider disabling password authentication in favor of SSO (SAML/LDAP) to enforce stronger authentication controls
+  learnMore: https://docs.github.com/en/enterprise-server/admin/managing-iam/using-saml-for-enterprise-iam/configuring-saml-single-sign-on-for-your-enterprise
+  tags: [ghes, authentication, password]
+  enabled: true
+
+- id: ghes-auth-002
+  scope: ghes
+  title: GHES is using built-in authentication instead of an external identity provider
+  category: ghes_authentication
+  severity: critical
+  description: The management API reports auth_mode=default/built-in. There is no integration with the enterprise IdP, so user lifecycle, MFA, and offboarding are inconsistent.
+  recommendation: Configure SAML SSO or LDAP authentication to integrate with your enterprise identity provider. Built-in authentication lacks centralized user lifecycle management
+  learnMore: https://docs.github.com/en/enterprise-server/admin/managing-iam/understanding-iam-for-your-enterprise/about-authentication-for-your-enterprise
+  tags: [ghes, authentication, sso]
+  enabled: true
+
+- id: ghes-auth-003
+  scope: ghes
+  title: GHES authentication mode observed
+  category: ghes_authentication
+  severity: info
+  description: Reports the configured external authentication mode (SAML / LDAP / CAS).
+  recommendation: External authentication provider is configured
+  learnMore: https://docs.github.com/en/enterprise-server/admin/managing-iam/understanding-iam-for-your-enterprise/about-authentication-for-your-enterprise
+  tags: [ghes, authentication]
+  enabled: true
+
+- id: ghes-auth-004
+  scope: ghes
+  title: Open signup is enabled on the GHES instance
+  category: ghes_authentication
+  severity: high
+  description: Open user signup is enabled, allowing anyone with network access to create an account. Enterprise GHES should provision users through the IdP, not open signup.
+  recommendation: Disable open signup to prevent unauthorized users from creating accounts. Use your identity provider for user provisioning
+  learnMore: https://docs.github.com/en/enterprise-server/admin/managing-iam/managing-your-enterprise-users-with-your-identity-provider/configuring-scim-provisioning-for-users
+  tags: [ghes, authentication, signup]
+  enabled: true
+
+- id: ghes-auth-005
+  scope: ghes
+  title: High percentage of GHES users are suspended
+  category: ghes_authentication
+  severity: medium
+  description: A significant fraction of the user population is suspended, indicating a user-lifecycle gap (often a deprovisioning script that suspends rather than removes users).
+  recommendation: Review user account hygiene. Consider removing or archiving suspended accounts if no longer needed
+  learnMore: https://docs.github.com/en/enterprise-server/admin/managing-accounts-and-repositories/managing-users-in-your-enterprise/auditing-users-across-your-enterprise
+  tags: [ghes, authentication, lifecycle]
+  enabled: true
+
+- id: ghes-net-001
+  scope: ghes
+  title: Subdomain isolation is not enabled
+  category: ghes_networking
+  severity: critical
+  description: Subdomain isolation routes user-controlled content (Pages, raw, gist) onto distinct subdomains so it cannot run scripts in the appliance origin. Disabling it exposes the instance to cross-site scripting attacks.
+  recommendation: Enable subdomain isolation to prevent cross-site scripting attacks. This is critical for security and should always be enabled in production
+  learnMore: https://docs.github.com/en/enterprise-server/admin/configuring-settings/configuring-network-settings/enabling-subdomain-isolation
+  tags: [ghes, networking, xss]
+  enabled: true
+
+- id: ghes-net-002
+  scope: ghes
+  title: Private mode is disabled
+  category: ghes_networking
+  severity: critical
+  description: Private mode is the appliance-level switch that requires authentication for every access path (UI, REST, Git over HTTPS). With it disabled, anonymous clients that can reach the appliance can browse public repositories, users, organisations, and many REST endpoints. The actual blast radius depends on the appliance's network position — internet-facing instances are unconditionally exposed.
+  recommendation: Enable private mode so all access (UI, API, and Git over HTTPS) requires authentication. Private mode is expected for any production or internal GHES appliance; leave it disabled only for instances intentionally exposed to the public internet
+  learnMore: https://docs.github.com/en/enterprise-server/admin/configuring-settings/configuring-your-enterprise/enabling-private-mode
+  tags: [ghes, networking, access_control]
+  enabled: true
+
+- id: ghes-net-003
+  scope: ghes
+  title: Public GitHub Pages are enabled on the GHES instance
+  category: ghes_networking
+  severity: medium
+  description: GitHub Pages is enabled with the public flag set, allowing user-generated Pages sites to be served to unauthenticated visitors. Inappropriate for internal-only instances.
+  recommendation: Consider disabling public Pages if the instance is internal-only to prevent accidental content exposure
+  learnMore: https://docs.github.com/en/enterprise-server/admin/configuring-settings/configuring-github-pages-for-your-enterprise
+  tags: [ghes, networking, pages]
+  enabled: true
+
+- id: ghes-net-004
+  scope: ghes
+  title: GitHub Pages is enabled while subdomain isolation is disabled
+  category: ghes_networking
+  severity: critical
+  description: Pages is enabled and subdomain isolation is off, so user-authored Pages sites are served from the same origin as the appliance UI and API. This lets a Pages site run script in the appliance origin, read session cookies, and issue authenticated API requests on behalf of any visiting user.
+  recommendation: Enable subdomain isolation before (or instead of) enabling GitHub Pages. GitHub documents subdomain isolation as a prerequisite for safely serving Pages from a GHES appliance
+  learnMore: https://docs.github.com/en/enterprise-server/admin/configuring-settings/configuring-network-settings/enabling-subdomain-isolation
+  tags: [ghes, networking, pages, xss]
+  enabled: true

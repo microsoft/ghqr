@@ -17,6 +17,7 @@ func init() {
 	scanCmd.PersistentFlags().StringArrayP("enterprise", "e", []string{}, "GitHub Enterprise(s) to scan (can be specified multiple times)")
 	scanCmd.PersistentFlags().StringArrayP("organization", "o", []string{}, "GitHub Organization(s) to scan (can be specified multiple times)")
 	scanCmd.PersistentFlags().StringArrayP("repository", "r", []string{}, "GitHub Repository (owner/repo)")
+	scanCmd.PersistentFlags().StringArrayP("ghes", "", []string{}, "GitHub Enterprise Server hostname(s) to scan (e.g. ghes.example.com)")
 	scanCmd.PersistentFlags().StringP("output-name", "n", "", "Output file name without extension")
 	scanCmd.PersistentFlags().StringP("hostname", "H", "", "GitHub hostname (e.g. mycompany.ghe.com for Data Residency). Defaults to github.com. Also reads GH_HOST env var")
 	scanCmd.PersistentFlags().Bool("xlsx", true, "Create Excel (.xlsx) report")
@@ -50,6 +51,12 @@ Examples:
   # Scan specific repositories
   ghqr scan -r owner1/repo1 -r owner2/repo2
 
+  # Scan a GitHub Enterprise Server instance
+  ghqr scan --ghes ghes.example.com
+
+  # Scan multiple GHES instances
+  ghqr scan --ghes ghes1.example.com --ghes ghes2.example.com
+
   # Scan with custom output name
   ghqr scan -e my-enterprise -n my-audit-2024
 
@@ -74,10 +81,12 @@ func scan(cmd *cobra.Command) {
 	enterprises := getStringArray(cmd, "enterprise")
 	organizations := getStringArray(cmd, "organization")
 	repositories := getStringArray(cmd, "repository")
+	ghesInstances := getStringArray(cmd, "ghes")
 
 	if fromJSON != "" && (len(enterprises) > 0 || len(organizations) > 0 || len(repositories) > 0) {
 		log.Fatal().Msg("--from-json cannot be combined with -e/--enterprise, -o/--organization, or -r/--repository")
 	}
+
 	if fromJSON != "" {
 		if _, err := os.Stat(fromJSON); err != nil {
 			log.Fatal().Err(err).Str("path", fromJSON).Msg("--from-json file is not accessible")
@@ -88,6 +97,7 @@ func scan(cmd *cobra.Command) {
 		Enterprises:   enterprises,
 		Organizations: organizations,
 		Repositories:  repositories,
+		GHESInstances: ghesInstances,
 		OutputName:    getString(cmd, "output-name"),
 		Hostname:      hostname,
 		Debug:         getBool(cmd, "debug"),

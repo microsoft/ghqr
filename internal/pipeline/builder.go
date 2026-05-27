@@ -10,7 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/microsoft/ghqr/internal/config"
 	"github.com/microsoft/ghqr/internal/models"
+	"github.com/microsoft/ghqr/internal/scanners"
 )
 
 // ScanPipelineBuilder provides a fluent interface for building scan pipelines.
@@ -61,9 +63,9 @@ func (b *ScanPipelineBuilder) WithOrganizationScan() *ScanPipelineBuilder {
 	return b.addStage(NewOrganizationScanStage())
 }
 
-// WithOrgRepositoryScan adds the org-repository scanning stage.
-func (b *ScanPipelineBuilder) WithOrgRepositoryScan() *ScanPipelineBuilder {
-	return b.addStage(NewOrgRepositoryScanStage())
+// WithOrgRepositoryDiscovery adds the org-repository discovery stage.
+func (b *ScanPipelineBuilder) WithOrgRepositoryDiscovery() *ScanPipelineBuilder {
+	return b.addStage(NewOrgRepositoryDiscoveryStage())
 }
 
 // WithRepositoryScan adds the individual repository scanning stage.
@@ -81,21 +83,31 @@ func (b *ScanPipelineBuilder) WithEvaluation() *ScanPipelineBuilder {
 	return b.addStage(NewEvaluationStage())
 }
 
+// WithGHESScan adds the GitHub Enterprise Server scanning stage.
+func (b *ScanPipelineBuilder) WithGHESScan() *ScanPipelineBuilder {
+	return b.addStage(NewGHESScanStage())
+}
+
 // Build creates the pipeline with all configured stages.
 func (b *ScanPipelineBuilder) Build() *Pipeline {
 	return NewPipeline(b.stages...)
 }
 
 // BuildDefault creates a pipeline with all standard stages.
+//
+// LoadFromJSON runs BEFORE any scanning stage so that --from-json replays do
+// not issue any live API calls. Every scanning stage must additionally check
+// ctx.Params.FromJSON in its Skip() method as a belt-and-braces guard.
 func (b *ScanPipelineBuilder) BuildDefault() *Pipeline {
 	return b.
 		WithInitialization().
 		WithLoadFromJSON().
+		WithGHESScan().
 		WithEnterpriseDiscovery().
 		WithEnterpriseScan().
 		WithOrganizationDiscovery().
 		WithOrganizationScan().
-		WithOrgRepositoryScan().
+		WithOrgRepositoryDiscovery().
 		WithRepositoryScan().
 		WithEvaluation().
 		WithReportRendering().
@@ -119,12 +131,14 @@ func NewScanContext(params *models.ScanParams) *ScanContext {
 	}
 
 	return &ScanContext{
-		Ctx:        ctx,
-		Cancel:     cancel,
-		StartTime:  startTime,
-		OutputName: outputName,
-		Params:     params,
-		Results:    make(map[string]interface{}),
-		Ownership:  make(map[string]string),
+		Ctx:            ctx,
+		Cancel:         cancel,
+		StartTime:      startTime,
+		OutputName:     outputName,
+		Params:         params,
+		Clients:        make(map[string]*config.Clients),
+		GraphQLClients: make(map[string]*scanners.GraphQLClient),
+		Results:        make(map[string]interface{}),
+		Ownership:      make(map[string]string),
 	}
 }

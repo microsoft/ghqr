@@ -23,6 +23,9 @@ const (
 	ScopeOrganization Scope = "organization"
 	// ScopeEnterprise indicates the recommendation evaluates an enterprise.
 	ScopeEnterprise Scope = "enterprise"
+	// ScopeGHES indicates the recommendation evaluates a GitHub Enterprise
+	// Server instance (the appliance itself, not an enterprise tenant).
+	ScopeGHES Scope = "ghes"
 )
 
 // Recommendation is the declarative descriptor for a single best-practice rule.

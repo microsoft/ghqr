@@ -14,6 +14,10 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// primaryClientKey is the map key used for the primary GitHub.com / GHEC client
+// stored in ScanContext.Clients.
+const primaryClientKey = "github.com"
+
 // ScanContext holds the state shared across pipeline stages.
 type ScanContext struct {
 	Ctx       context.Context
@@ -22,13 +26,17 @@ type ScanContext struct {
 	// OutputDir is computed once at startup and used by all stages.
 	OutputName string
 	Params     *models.ScanParams
-	// Clients holds the three GitHub API clients built once during initialization.
-	// All stages must read from this field instead of constructing their own clients.
-	Clients *config.Clients
-	// GraphQLScanner is the batch-capable GraphQL client built once during initialization.
-	GraphQLScanner *scanners.GraphQLClient
+	// Clients maps a hostname key to its full client set. The primary GitHub.com / GHEC
+	// client is stored under primaryClientKey ("github.com"); each GHES instance uses
+	// its hostname as the key. Build once per host and reuse across all stages.
+	Clients map[string]*config.Clients
+	// GraphQLClients maps a hostname key to its batch-capable GraphQL client.
+	// The primary GitHub.com / GHEC client is stored under primaryClientKey ("github.com").
+	// GHES instances do not use GraphQL and will have no entry in this map.
+	GraphQLClients map[string]*scanners.GraphQLClient
 	// Results accumulates scan data for report rendering.
 	// Keys follow the pattern "type:name", e.g. "organization:my-org", "repository:owner/repo".
+	// GHES results use "ghes:<hostname>".
 	Results map[string]interface{}
 	// Ownership tracks parent/child relationships discovered during scanning.
 	// Keys are "organization:<login>" and values are the enterprise slug that owns the org.
