@@ -355,6 +355,9 @@ Thanks to everyone who has contributed!
   <img src="https://contributors-img.web.app/image?repo=microsoft/ghqr" />
 </a>
 
+## Acknowledgements
+[Azure DevOps Quick Review](https://github.com/microsoft/adoqr) - a dedicated tool for Azure DevOps - inspired the creation of GitHub Quick Review.
+
 ## Code of Conduct
 
 This project has adopted the [Microsoft Open Source Code of Conduct](CODE_OF_CONDUCT.md).
