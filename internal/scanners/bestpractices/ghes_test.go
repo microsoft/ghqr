@@ -425,6 +425,23 @@ func TestEvaluateGHESSecurityAlerts_UnavailableAPIs(t *testing.T) {
 	}
 }
 
+// TestEvaluateGHESAuditLog_ManualInfraReminders verifies GHES manual-check
+// infrastructure reminders are always emitted when audit log data is present.
+func TestEvaluateGHESAuditLog_ManualInfraReminders(t *testing.T) {
+	e := loadedEvaluator(t)
+	result := e.EvaluateGHESAuditLog(&scanners.GHESAuditLogData{TotalEventsScanned: 1})
+	if result == nil {
+		t.Fatal("nil result")
+	}
+
+	wantRules := []string{"ghes-infra-003", "ghes-infra-004", "ghes-infra-005", "ghes-infra-006"}
+	for _, ruleID := range wantRules {
+		if !hasFinding(result, ruleID) {
+			t.Errorf("expected manual-check rule %s to be emitted", ruleID)
+		}
+	}
+}
+
 // TestEvaluateGHESSettings_PagesWithoutSubdomainIsolation locks in the
 // Pages-on-appliance-origin XSS finding. The combination must fire
 // Critical even when each setting on its own would only emit a lower-
@@ -505,7 +522,7 @@ func TestGHESRuleRegistryCoverage(t *testing.T) {
 		"ghes-sec-016",
 		"ghes-actions-001", "ghes-actions-002", "ghes-actions-003",
 		"ghes-infra-001", "ghes-infra-002", "ghes-infra-003",
-		"ghes-infra-004", "ghes-infra-005",
+		"ghes-infra-004", "ghes-infra-005", "ghes-infra-006",
 		"ghes-stats-001", "ghes-stats-002", "ghes-stats-003",
 		"ghes-stats-004", "ghes-stats-005",
 		"ghes-audit-001", "ghes-audit-002",

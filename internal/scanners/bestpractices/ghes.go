@@ -428,10 +428,12 @@ func (e *Evaluator) EvaluateGHESAuditLog(data *scanners.GHESAuditLogData) *Evalu
 
 	// GHES-specific manual-check reminders. These rules are always emitted
 	// because the underlying state (syslog forwarding, backup-utils, HA
-	// replica) is not observable through the REST API.
+	// replica, and trusted update-signing key rotation status) is not
+	// observable through the REST API.
 	e.addFinding(&findings, "ghes-infra-003", "")
 	e.addFinding(&findings, "ghes-infra-004", "")
 	e.addFinding(&findings, "ghes-infra-005", "")
+	e.addFinding(&findings, "ghes-infra-006", "")
 
 	return createResult(e, findings)
 }

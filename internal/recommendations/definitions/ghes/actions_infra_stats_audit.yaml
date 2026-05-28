@@ -86,6 +86,17 @@
   tags: [ghes, infrastructure, ha, manual]
   enabled: true
 
+- id: ghes-infra-006
+  scope: ghes
+  title: GHES signing key rotation status cannot be verified automatically
+  category: security
+  severity: high
+  description: GitHub rotated the GHES update signing key in May 2026 after unauthorized access to internal repositories. Key-rotation status is not observable through the REST API, so this finding is always emitted as a manual-check reminder.
+  recommendation: Manually verify that the GHES trusted update signing key has been rotated per GitHub guidance so future updates and security patches can be verified and applied
+  learnMore: https://github.blog/security/investigating-unauthorized-access-to-githubs-internal-repositories/
+  tags: [ghes, security, updates, manual]
+  enabled: true
+
 - id: ghes-stats-001
   scope: ghes
   title: GHES user population summary
