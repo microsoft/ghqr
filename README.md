@@ -52,6 +52,8 @@ Outputs are available in **Markdown (.md)**, **Excel (.xlsx)** (default) and **J
 
 ## Installation
 
+Create a folder for installing the ghqr binary. 
+
 ### Linux / macOS
 
 ```bash
@@ -82,7 +84,7 @@ cd ghqr
 make
 ```
 
-## Quick Start
+## Quick Start Linux / macOS
 
 ```bash
 # 1. Set your GitHub token
@@ -98,6 +100,23 @@ ghqr scan -e my-enterprise
 export GH_TOKEN=<your-ghes-personal-access-token>
 ghqr scan --ghes ghes.example.com
 ```
+## Quick Start Windows
+```PowerShell
+# 1. Set your GitHub token
+$env:GITHUB_TOKEN="<your-personal-access-token>"
+
+# 2. Scan an organization
+.\ghqr scan -o my-org
+
+# 3. Scan a GitHub Enterprise (Cloud)
+.\ghqr scan -e my-enterprise
+
+# 4. Scan a GitHub Enterprise Server (GHES) instance
+$env:GH_TOKEN="<your-ghes-personal-access-token>"
+.\ghqr scan --ghes ghes.example.com
+
+```
+
 
 ## Usage
 
