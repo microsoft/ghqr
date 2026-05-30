@@ -5,6 +5,7 @@ package pipeline
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/microsoft/ghqr/internal/config"
 	"github.com/microsoft/ghqr/internal/scanners"
@@ -28,12 +29,15 @@ func (s *GHESScanStage) Execute(ctx *ScanContext) error {
 		Int("count", len(ctx.Params.GHESInstances)).
 		Msg("Starting GHES instance scan")
 
+	var failures []string
+
 	for _, hostname := range ctx.Params.GHESInstances {
 		log.Info().Str("hostname", hostname).Msg("Scanning GHES instance")
 
 		clients, err := config.NewClients(ctx.Ctx, config.WithGHES(hostname))
 		if err != nil {
 			log.Error().Err(err).Str("hostname", hostname).Msg("Failed to create GHES client")
+			failures = append(failures, fmt.Sprintf("%s: %v", hostname, err))
 			continue
 		}
 		ctx.Clients[hostname] = clients
@@ -44,6 +48,7 @@ func (s *GHESScanStage) Execute(ctx *ScanContext) error {
 		data, err := scanner.ScanAll(ctx.Ctx)
 		if err != nil {
 			log.Error().Err(err).Str("hostname", hostname).Msg("Failed to scan GHES instance")
+			failures = append(failures, fmt.Sprintf("%s: %v", hostname, err))
 			continue
 		}
 
@@ -53,6 +58,12 @@ func (s *GHESScanStage) Execute(ctx *ScanContext) error {
 			Str("hostname", hostname).
 			Int("organizations", len(data.Organizations)).
 			Msg("GHES instance scan completed successfully")
+	}
+
+	// If every requested instance failed, surface the errors so callers receive a
+	// meaningful failure instead of a silent no-op that leaves no output file.
+	if len(failures) > 0 && len(failures) == len(ctx.Params.GHESInstances) {
+		return fmt.Errorf("all GHES instance scans failed: %s", strings.Join(failures, "; "))
 	}
 
 	log.Info().Msg("GHES instance scan completed")
