@@ -19,8 +19,11 @@ func registerScanResources(outputName, resultName string, uriJSON string) {
 		return
 	}
 
+	// The JSON report is always written with a ".json" extension appended to outputName.
+	jsonPath := outputName + ".json"
+
 	// Register JSON resource if it exists
-	if _, err := os.Stat(outputName); err != nil {
+	if _, err := os.Stat(jsonPath); err != nil {
 		return
 	}
 
@@ -31,7 +34,7 @@ func registerScanResources(outputName, resultName string, uriJSON string) {
 		mcp.WithMIMEType("application/json"),
 	)
 
-	encodedJSON := encodeFileBase64(outputName)
+	encodedJSON := encodeFileBase64(jsonPath)
 	s.AddResource(jsonResource, func(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 		return []mcp.ResourceContents{
 			mcp.BlobResourceContents{

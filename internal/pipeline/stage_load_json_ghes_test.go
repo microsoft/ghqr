@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/microsoft/ghqr/internal/config"
 	"github.com/microsoft/ghqr/internal/models"
 	"github.com/microsoft/ghqr/internal/scanners"
 )
@@ -132,5 +133,44 @@ func TestGHESScanStage_SkipOnReplay(t *testing.T) {
 	noInstances := &ScanContext{Params: &models.ScanParams{}}
 	if !stage.Skip(noInstances) {
 		t.Error("GHESScanStage.Skip() should return true when no GHESInstances are set")
+	}
+}
+
+// TestGHESScanStage_AllInstancesFailReturnsError verifies that Execute returns a
+// non-nil error when every requested GHES instance fails to scan. Previously the
+// stage silently swallowed all per-instance errors and returned nil, which left
+// ctx.Results empty and caused a downstream "report file could not be read" error
+// in the MCP scan tool instead of surfacing the actual failure reason.
+//
+// The test clears the GitHub token env vars so that client creation fails
+// immediately (GHES token not found), triggering the all-failed code path
+// without requiring network access.
+func TestGHESScanStage_AllInstancesFailReturnsError(t *testing.T) {
+	// Clear tokens so config.NewClients fails deterministically.
+	t.Setenv("GH_TOKEN", "")
+	t.Setenv("GITHUB_TOKEN", "")
+
+	stage := NewGHESScanStage()
+	ctx := &ScanContext{
+		Ctx: context.Background(),
+		Params: &models.ScanParams{
+			GHESInstances: []string{"ghes1.example.com", "ghes2.example.com"},
+		},
+		Results:        map[string]interface{}{},
+		Clients:        map[string]*config.Clients{},
+		GraphQLClients: map[string]*scanners.GraphQLClient{},
+		Ownership:      map[string]string{},
+	}
+
+	err := stage.Execute(ctx)
+	if err == nil {
+		t.Fatal("Execute() should return a non-nil error when all GHES instances fail to scan")
+	}
+	if !strings.Contains(err.Error(), "all GHES instance scans failed") {
+		t.Errorf("expected error to mention 'all GHES instance scans failed', got: %v", err)
+	}
+	// No results should have been added to ctx.Results.
+	if len(ctx.Results) != 0 {
+		t.Errorf("expected no results when all scans fail, got %d", len(ctx.Results))
 	}
 }
