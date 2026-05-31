@@ -1,0 +1,111 @@
+baseURL = "/"
+title = "GitHub Quick Review"
+
+# Language settings
+contentDir = "content/en"
+defaultContentLanguage = "en"
+defaultContentLanguageInSubdir = false
+enableMissingTranslationPlaceholders = true
+
+enableRobotsTXT = true
+
+# Will give values to .Lastmod etc.
+enableGitInfo = true
+
+[taxonomies]
+tag = "tags"
+category = "categories"
+
+[params.taxonomy]
+taxonomyCloud = ["tags", "categories"]
+taxonomyCloudTitle = ["Tag Cloud", "Categories"]
+taxonomyPageHeader = ["tags", "categories"]
+
+# Highlighting config
+pygmentsCodeFences = true
+pygmentsUseClasses = false
+pygmentsUseClassic = false
+pygmentsStyle = "tango"
+
+[permalinks]
+blog = "/:section/:year/:month/:day/:slug/"
+
+[imaging]
+resampleFilter = "CatmullRom"
+quality = 75
+anchor = "smart"
+
+[services]
+[services.googleAnalytics]
+id = "UA-00000000-0"
+
+[languages]
+[languages.en]
+languageName = "English"
+weight = 1
+[languages.en.params]
+title = "GitHub Quick Review"
+description = "GitHub Quick Review"
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.parser.attribute]
+      block = true
+    [markup.goldmark.renderer]
+      unsafe = true
+  [markup.highlight]
+    style = "tango"
+
+[outputs]
+section = ["HTML", "print", "RSS"]
+
+[params]
+copyright = "Microsoft Corporation"
+
+version_menu = "Releases"
+archived_version = false
+version = "0.0"
+url_latest_version = "https://microsoft.github.io/ghqr"
+
+github_repo = "https://github.com/microsoft/ghqr"
+github_project_repo = "https://github.com/microsoft/ghqr"
+github_subdir = "docs"
+github_branch = "main"
+
+algolia_docsearch = false
+offlineSearch = true
+prism_syntax_highlighting = false
+
+[params.ui]
+breadcrumb_disable = false
+footer_about_disable = false
+navbar_logo = true
+navbar_translucent_over_cover_disable = false
+sidebar_menu_compact = false
+sidebar_search_disable = false
+
+[params.ui.feedback]
+enable = true
+yes = 'Glad to hear it! Please <a href="https://github.com/microsoft/ghqr/issues/new">tell us how we can improve</a>.'
+no = 'Sorry to hear that. Please <a href="https://github.com/microsoft/ghqr/issues/new">tell us how we can improve</a>.'
+
+[params.ui.readingtime]
+enable = false
+
+[params.links]
+[[params.links.developer]]
+  name = "Microsoft - GitHub Quick Review"
+  url = "https://github.com/microsoft/ghqr"
+  icon = "fab fa-microsoft"
+  desc = ""
+
+[module]
+  [module.hugoVersion]
+    extended = true
+    min = "0.110.0"
+  [[module.imports]]
+    path = "github.com/google/docsy"
+    disable = false
+  [[module.imports]]
+    path = "github.com/google/docsy/dependencies"
+    disable = false

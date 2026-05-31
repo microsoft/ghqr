@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/microsoft/ghqr/internal/recommendations"
@@ -31,6 +32,7 @@ var (
 	listRecsFlagCategory string
 	listRecsFlagSeverity string
 	listRecsFlagJSON     bool
+	listRecsFlagMarkdown bool
 )
 
 func init() {
@@ -38,6 +40,7 @@ func init() {
 	listRecommendationsCmd.Flags().StringVarP(&listRecsFlagCategory, "category", "c", "", "Filter by category (e.g. security, branch_protection)")
 	listRecommendationsCmd.Flags().StringVar(&listRecsFlagSeverity, "severity", "", "Filter by severity (critical, high, medium, low, info)")
 	listRecommendationsCmd.Flags().BoolVar(&listRecsFlagJSON, "json", false, "Output as JSON")
+	listRecommendationsCmd.Flags().BoolVar(&listRecsFlagMarkdown, "markdown", false, "Output as a GitHub Flavored Markdown table")
 	rootCmd.AddCommand(listRecommendationsCmd)
 }
 
@@ -70,6 +73,10 @@ func runListRecommendations(cmd *cobra.Command, args []string) error {
 		return enc.Encode(filtered)
 	}
 
+	if listRecsFlagMarkdown {
+		return writeMarkdownTable(filtered)
+	}
+
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	_, _ = fmt.Fprintln(w, "ID\tSCOPE\tCATEGORY\tSEVERITY\tTITLE")
 	_, _ = fmt.Fprintln(w, "──────────────────\t──────────────\t──────────────────────\t──────────\t─────────────────────────────────────────────────────")
@@ -80,5 +87,18 @@ func runListRecommendations(cmd *cobra.Command, args []string) error {
 	_ = w.Flush()
 
 	_, _ = fmt.Fprintf(os.Stderr, "\n%d recommendation(s) shown (total in registry: %d)\n", len(filtered), registry.Count())
+	return nil
+}
+
+// writeMarkdownTable writes all recommendations as a GitHub Flavored Markdown table.
+// The output is used by the docs build workflow to populate docs/static/rules.txt.
+func writeMarkdownTable(recs []*recommendations.Recommendation) error {
+	_, _ = fmt.Fprintln(os.Stdout, "| ID | Scope | Category | Severity | Title |")
+	_, _ = fmt.Fprintln(os.Stdout, "|---|---|---|---|---|")
+	for _, r := range recs {
+		title := strings.ReplaceAll(r.Title, "|", "\\|")
+		_, _ = fmt.Fprintf(os.Stdout, "| %s | %s | %s | %s | %s |\n",
+			r.ID, r.Scope, r.Category, r.Severity, title)
+	}
 	return nil
 }
