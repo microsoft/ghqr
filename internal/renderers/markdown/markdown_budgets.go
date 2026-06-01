@@ -27,7 +27,7 @@ func generateBudgetOverview(report *renderers.ScanReport) string {
 		if budgets == nil || !budgets.Available {
 			sb.WriteString(fmt.Sprintf("### Enterprise: %s\n\n", name))
 			sb.WriteString("> 🚨 **Alert:** Budget data is not available for this enterprise. ")
-			sb.WriteString("To access budget data, use a **classic Personal Access Token** (fine-grained PATs are not supported) with the `manage_billing:enterprise` scope (or `admin:enterprise`), ")
+			sb.WriteString("To access budget data, use a **classic Personal Access Token** (fine-grained PATs are not supported) with the `manage_billing:enterprise` scope, ")
 			sb.WriteString("and the authenticated user must be an **enterprise admin** or **billing manager**. ")
 			sb.WriteString("Alternatively, the enhanced billing platform may not be enabled for this enterprise.\n\n")
 			continue

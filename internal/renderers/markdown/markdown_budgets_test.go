@@ -23,7 +23,10 @@ func TestGenerateBudgetOverview_UnavailableBudgetsScopeGuidance(t *testing.T) {
 
 	out := generateBudgetOverview(report)
 
-	if !strings.Contains(out, "`manage_billing:enterprise` scope (or `admin:enterprise`)") {
+	if !strings.Contains(out, "`manage_billing:enterprise` scope") {
 		t.Fatalf("expected least-privilege budget scope guidance in output, got:\n%s", out)
+	}
+	if strings.Contains(out, "`admin:enterprise`") {
+		t.Fatalf("expected admin scope to be removed from guidance, got:\n%s", out)
 	}
 }
