@@ -4,8 +4,8 @@
 package excel
 
 import (
-	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/microsoft/ghqr/internal/scanners"
@@ -27,15 +27,12 @@ func renderRepositories(f *excelize.File, results map[string]interface{}, styles
 		"Default Branch", "Language", "License",
 		"Total Issues", "Critical", "High", "Medium", "Low",
 	}
-	createFirstRow(f, sheet, headers, styles)
 
-	rows := buildRepositoriesTable(results)
-	lastRow, err := writeRows(f, sheet, rows, 1)
-	if err != nil {
-		log.Error().Err(err).Msg("Failed to write Repositories rows")
-	}
-
-	configureSheet(f, sheet, headers, lastRow, styles)
+	data := buildRepositoriesTable(results)
+	rows := make([][]string, 0, len(data)+1)
+	rows = append(rows, headers)
+	rows = append(rows, data...)
+	streamSheet(f, sheet, rows, styles)
 }
 
 func buildRepositoriesTable(results map[string]interface{}) [][]string {
@@ -79,11 +76,11 @@ func buildRepositoriesTable(results map[string]interface{}) [][]string {
 		if evalVal, ok := results[evalKey]; ok {
 			if eval, ok := evalVal.(*bestpractices.EvaluationResult); ok {
 				if s := eval.Summary; s != nil {
-					total = fmt.Sprintf("%d", s.TotalIssues)
-					critical = fmt.Sprintf("%d", s.Critical)
-					high = fmt.Sprintf("%d", s.HighSeverity)
-					medium = fmt.Sprintf("%d", s.MediumSeverity)
-					low = fmt.Sprintf("%d", s.LowSeverity)
+					total = strconv.Itoa(s.TotalIssues)
+					critical = strconv.Itoa(s.Critical)
+					high = strconv.Itoa(s.HighSeverity)
+					medium = strconv.Itoa(s.MediumSeverity)
+					low = strconv.Itoa(s.LowSeverity)
 				}
 			}
 		}

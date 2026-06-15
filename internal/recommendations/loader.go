@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/fs"
 	"strings"
+	"sync"
 
 	"gopkg.in/yaml.v3"
 )
@@ -15,10 +16,21 @@ import (
 //go:embed definitions/**/*.yaml
 var embeddedDefinitions embed.FS
 
+var (
+	loadOnce      sync.Once
+	loadedRegistry *Registry
+	loadErr        error
+)
+
 // Load reads all embedded YAML rule definition files and returns a populated Registry.
+// Results are cached after the first call — the embedded filesystem is immutable so
+// repeated FS walks and YAML parses are pure waste.
 // It returns an error if any file cannot be parsed or if duplicate rule IDs are found.
 func Load() (*Registry, error) {
-	return loadFrom(embeddedDefinitions)
+	loadOnce.Do(func() {
+		loadedRegistry, loadErr = loadFrom(embeddedDefinitions)
+	})
+	return loadedRegistry, loadErr
 }
 
 // loadFrom is the internal loader used by Load and tests.

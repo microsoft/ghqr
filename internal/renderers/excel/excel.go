@@ -5,6 +5,7 @@ package excel
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/rs/zerolog/log"
 	"github.com/xuri/excelize/v2"
@@ -55,7 +56,7 @@ func createSharedStyles(f *excelize.File) (*StyleCache, error) {
 
 // CreateExcelReport builds an Excel file from scan results and writes it to disk.
 func CreateExcelReport(results map[string]interface{}, outputName string) {
-	filename := fmt.Sprintf("%s.xlsx", outputName)
+	filename := outputName + ".xlsx"
 	log.Info().Msgf("Generating Excel report: %s", filename)
 
 	f := excelize.NewFile()
@@ -91,116 +92,111 @@ func CreateExcelReport(results map[string]interface{}, outputName string) {
 	log.Info().Str("path", filename).Msg("Excel report written")
 }
 
-// createFirstRow writes the header row (row 1) and applies the header style.
-func createFirstRow(f *excelize.File, sheet string, headers []string, styles *StyleCache) {
-	cell, err := excelize.CoordinatesToCellName(1, 1)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to get cell")
-	}
-	if err := f.SetSheetRow(sheet, cell, &headers); err != nil {
-		log.Fatal().Err(err).Msg("Failed to set header row")
-	}
-	if len(headers) > 0 {
-		endCell, err := excelize.CoordinatesToCellName(len(headers), 1)
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to get end cell")
-		}
-		if err := f.SetCellStyle(sheet, "A1", endCell, styles.Header); err != nil {
-			log.Fatal().Err(err).Msg("Failed to set header style")
-		}
-	}
-}
-
-// writeRows appends rows starting after startRow and returns the last written row number.
-func writeRows(f *excelize.File, sheet string, rows [][]string, startRow int) (int, error) {
-	currentRow := startRow
-	for _, row := range rows {
-		currentRow++
-		cell, err := excelize.CoordinatesToCellName(1, currentRow)
-		if err != nil {
-			return currentRow, fmt.Errorf("failed to get cell name: %w", err)
-		}
-		if err := f.SetSheetRow(sheet, cell, &row); err != nil {
-			return currentRow, fmt.Errorf("failed to set row: %w", err)
-		}
-	}
-	return currentRow, nil
-}
-
-// configureSheet applies autofit, autofilter, and alternating row colors.
-func configureSheet(f *excelize.File, sheet string, headers []string, lastRow int, styles *StyleCache) {
-	autofitColumns(f, sheet)
-
-	if len(headers) > 0 && lastRow >= 1 {
-		endCell, err := excelize.CoordinatesToCellName(len(headers), lastRow)
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to get autofilter end cell")
-		}
-		if err := f.AutoFilter(sheet, fmt.Sprintf("A1:%s", endCell), nil); err != nil {
-			log.Fatal().Err(err).Msg("Failed to set autofilter")
-		}
-	}
-
-	applyRowStyles(f, sheet, lastRow, len(headers), styles)
-}
-
-// autofitColumns sets column widths based on content (sampled, capped at 120).
-func autofitColumns(f *excelize.File, sheet string) {
-	cols, err := f.GetCols(sheet)
-	if err != nil {
+// streamSheet writes all rows for a sheet using excelize StreamWriter, which streams
+// directly to the zip buffer instead of keeping every cell in an in-memory map.
+// rows[0] is treated as the header row. Column widths are pre-computed from the
+// in-memory slice so no second read-back of the sheet is required.
+func streamSheet(f *excelize.File, sheetName string, rows [][]string, styles *StyleCache) {
+	if len(rows) == 0 {
 		return
+	}
+
+	widths := computeWidthsFromRecords(rows, 1000)
+
+	sw, err := f.NewStreamWriter(sheetName)
+	if err != nil {
+		log.Error().Err(err).Msgf("failed to create stream writer for %s", sheetName)
+		return
+	}
+
+	// Column widths must be set before any SetRow calls.
+	for i, w := range widths {
+		if w < 8 {
+			w = 8
+		}
+		if err := sw.SetColWidth(i+1, i+1, float64(w)); err != nil {
+			log.Warn().Err(err).Msgf("failed to set column %d width for %s", i+1, sheetName)
+		}
+	}
+
+	// Header row (row 1).
+	headers := rows[0]
+	headerCells := make([]interface{}, len(headers))
+	for i, h := range headers {
+		headerCells[i] = excelize.Cell{Value: h, StyleID: styles.Header}
+	}
+	if err := sw.SetRow("A1", headerCells, excelize.RowOpts{StyleID: styles.Header}); err != nil {
+		log.Error().Err(err).Msgf("failed to write header row for %s", sheetName)
+	}
+
+	// Data rows with alternating blue/white fill.
+	cells := make([]interface{}, len(headers))
+	for i, row := range rows[1:] {
+		rowNum := i + 2 // 1-based; header is row 1
+		styleID := styles.White
+		if rowNum%2 == 0 {
+			styleID = styles.Blue
+		}
+		for j := range cells {
+			val := ""
+			if j < len(row) {
+				val = row[j]
+			}
+			cells[j] = excelize.Cell{Value: val, StyleID: styleID}
+		}
+		cellName := "A" + strconv.Itoa(rowNum)
+		if err := sw.SetRow(cellName, cells, excelize.RowOpts{StyleID: styleID}); err != nil {
+			log.Warn().Err(err).Msgf("failed to write row %d for %s", rowNum, sheetName)
+		}
+	}
+
+	// AutoFilter must be applied before Flush so it is serialised into the worksheet XML.
+	if len(rows) >= 1 && len(headers) > 0 {
+		lastRow := len(rows)
+		if lastCell, err := excelize.CoordinatesToCellName(len(headers), lastRow); err == nil {
+			if err := f.AutoFilter(sheetName, "A1:"+lastCell, nil); err != nil {
+				log.Warn().Err(err).Msgf("failed to set autofilter for %s", sheetName)
+			}
+		}
+	}
+
+	if err := sw.Flush(); err != nil {
+		log.Error().Err(err).Msgf("failed to flush stream writer for %s", sheetName)
+	}
+}
+
+// computeWidthsFromRecords calculates per-column max widths by scanning the
+// already-in-memory records slice. This avoids the memory cost of f.GetCols()
+// which reads all sheet data back out of excelize's cell map.
+// At most maxSampleRows rows are scanned to bound the cost for large sheets.
+func computeWidthsFromRecords(records [][]string, maxSampleRows int) []int {
+	if len(records) == 0 {
+		return nil
 	}
 	const maxWidth = 120
-	const sampleRows = 1000
-	for idx, col := range cols {
-		largest := 0
-		limit := len(col)
-		if limit > sampleRows {
-			limit = sampleRows
-		}
-		for i := 0; i < limit; i++ {
-			w := len(col[i]) + 3
-			if w > largest {
-				largest = w
-			}
-			if largest >= maxWidth {
-				largest = maxWidth
+	ncols := len(records[0])
+	widths := make([]int, ncols)
+
+	limit := len(records)
+	if limit > maxSampleRows {
+		limit = maxSampleRows
+	}
+
+	for _, row := range records[:limit] {
+		for i, cell := range row {
+			if i >= ncols {
 				break
 			}
-		}
-		if largest > 255 {
-			largest = maxWidth
-		}
-		name, err := excelize.ColumnNumberToName(idx + 1)
-		if err != nil {
-			continue
-		}
-		_ = f.SetColWidth(sheet, name, name, float64(largest))
-	}
-}
-
-// applyRowStyles applies alternating blue/white fill to data rows (row 2 onward).
-func applyRowStyles(f *excelize.File, sheet string, lastRow, columns int, styles *StyleCache) {
-	if columns == 0 || lastRow < 2 {
-		return
-	}
-	for i := 2; i <= lastRow; i++ {
-		style := styles.White
-		if i%2 == 0 {
-			style = styles.Blue
-		}
-		startCell, err := excelize.CoordinatesToCellName(1, i)
-		if err != nil {
-			continue
-		}
-		endCell, err := excelize.CoordinatesToCellName(columns, i)
-		if err != nil {
-			continue
-		}
-		if err := f.SetCellStyle(sheet, startCell, endCell, style); err != nil {
-			log.Fatal().Err(err).Msg("Failed to set row style")
+			w := len(cell) + 3
+			if w > widths[i] {
+				widths[i] = w
+			}
+			if widths[i] > maxWidth {
+				widths[i] = maxWidth
+			}
 		}
 	}
+	return widths
 }
 
 // boolStr converts a bool to "Yes" / "No" for human-readable output.

@@ -50,8 +50,21 @@ func MapNodeToData(gql RepositoryNode) *RepositoryData {
 	total := 0
 	for _, node := range gql.VulnerabilityAlerts.Nodes {
 		if node.DismissedAt == nil {
-			sev := strings.ToLower(string(node.SecurityVulnerability.Severity))
-			bySeverity[sev]++
+			// GitHub returns severity as an uppercase enum (CRITICAL, HIGH, MEDIUM, LOW).
+			// Compare without allocating a lowered string; store the canonical lowercase key.
+			sev := string(node.SecurityVulnerability.Severity)
+			switch {
+			case strings.EqualFold(sev, "critical"):
+				bySeverity["critical"]++
+			case strings.EqualFold(sev, "high"):
+				bySeverity["high"]++
+			case strings.EqualFold(sev, "medium"):
+				bySeverity["medium"]++
+			case strings.EqualFold(sev, "low"):
+				bySeverity["low"]++
+			default:
+				bySeverity[strings.ToLower(sev)]++
+			}
 			total++
 		}
 	}

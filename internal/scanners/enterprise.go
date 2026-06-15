@@ -261,10 +261,10 @@ func (e *EnterpriseScanner) getSecurityAlerts(ctx context.Context) (*EnterpriseS
 			result.Available = true
 			result.OpenDependabotAlerts = len(depAlerts)
 			for _, a := range depAlerts {
-				switch strings.ToLower(a.SecurityAdvisory.Severity) {
-				case "critical":
+				switch strings.ToUpper(a.SecurityAdvisory.Severity) {
+				case "CRITICAL":
 					result.CriticalDependabot++
-				case "high":
+				case "HIGH":
 					result.HighDependabot++
 				}
 			}

@@ -4,8 +4,8 @@
 package excel
 
 import (
-	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/microsoft/ghqr/internal/scanners"
@@ -26,15 +26,12 @@ func renderBranchProtection(f *excelize.File, results map[string]interface{}, st
 		"Require Status Checks", "Strict Status Checks",
 		"Allow Force Pushes", "Allow Deletions", "Required Signatures",
 	}
-	createFirstRow(f, sheet, headers, styles)
 
-	rows := buildBranchProtectionTable(results)
-	lastRow, err := writeRows(f, sheet, rows, 1)
-	if err != nil {
-		log.Error().Err(err).Msg("Failed to write BranchProtection rows")
-	}
-
-	configureSheet(f, sheet, headers, lastRow, styles)
+	data := buildBranchProtectionTable(results)
+	rows := make([][]string, 0, len(data)+1)
+	rows = append(rows, headers)
+	rows = append(rows, data...)
+	streamSheet(f, sheet, rows, styles)
 }
 
 func buildBranchProtectionTable(results map[string]interface{}) [][]string {
@@ -72,7 +69,7 @@ func buildBranchProtectionTable(results map[string]interface{}) [][]string {
 		requiredSignatures := boolStr(bp.RequiredSignatures)
 
 		if r := bp.RequiredPullRequestReviews; r != nil {
-			requiredApprovals = fmt.Sprintf("%d", r.RequiredApprovingReviewCount)
+			requiredApprovals = strconv.Itoa(r.RequiredApprovingReviewCount)
 			dismissStale = boolStr(r.DismissStaleReviews)
 			requireCodeowners = boolStr(r.RequireCodeOwnerReviews)
 		}

@@ -157,10 +157,10 @@ func (o *OrganizationScanner) scanSecurityAlerts(ctx context.Context) (*OrgSecur
 		result.Available = true
 		result.OpenDependabotAlerts += len(dependabotAlerts)
 		for _, a := range dependabotAlerts {
-			switch strings.ToLower(a.SecurityAdvisory.Severity) {
-			case "critical":
+			switch strings.ToUpper(a.SecurityAdvisory.Severity) {
+			case "CRITICAL":
 				result.CriticalDependabot++
-			case "high":
+			case "HIGH":
 				result.HighDependabot++
 			}
 		}

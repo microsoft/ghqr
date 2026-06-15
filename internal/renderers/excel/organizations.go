@@ -4,8 +4,8 @@
 package excel
 
 import (
-	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/microsoft/ghqr/internal/scanners"
@@ -28,15 +28,12 @@ func renderOrganizations(f *excelize.File, results map[string]interface{}, style
 		"Advanced Security New Repos", "Dependabot Alerts New Repos",
 		"Total Issues",
 	}
-	createFirstRow(f, sheet, headers, styles)
 
-	rows := buildOrganizationsTable(results)
-	lastRow, err := writeRows(f, sheet, rows, 1)
-	if err != nil {
-		log.Error().Err(err).Msg("Failed to write Organizations rows")
-	}
-
-	configureSheet(f, sheet, headers, lastRow, styles)
+	data := buildOrganizationsTable(results)
+	rows := make([][]string, 0, len(data)+1)
+	rows = append(rows, headers)
+	rows = append(rows, data...)
+	streamSheet(f, sheet, rows, styles)
 }
 
 func buildOrganizationsTable(results map[string]interface{}) [][]string {
@@ -84,7 +81,7 @@ func buildOrganizationsTable(results map[string]interface{}) [][]string {
 		if evalVal, ok := results[evalKey]; ok {
 			if eval, ok := evalVal.(*bestpractices.EvaluationResult); ok {
 				if s := eval.Summary; s != nil {
-					total = fmt.Sprintf("%d", s.TotalIssues)
+					total = strconv.Itoa(s.TotalIssues)
 				}
 			}
 		}

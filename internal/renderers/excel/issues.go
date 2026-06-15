@@ -20,15 +20,12 @@ func renderIssues(f *excelize.File, results map[string]interface{}, styles *Styl
 	}
 
 	headers := []string{"Type", "Name", "Severity", "Category", "Issue", "Recommendation", "Learn More"}
-	createFirstRow(f, sheet, headers, styles)
 
-	rows := buildIssuesTable(results)
-	lastRow, err := writeRows(f, sheet, rows, 1)
-	if err != nil {
-		log.Error().Err(err).Msg("Failed to write Findings rows")
-	}
-
-	configureSheet(f, sheet, headers, lastRow, styles)
+	data := buildIssuesTable(results)
+	rows := make([][]string, 0, len(data)+1)
+	rows = append(rows, headers)
+	rows = append(rows, data...)
+	streamSheet(f, sheet, rows, styles)
 }
 
 // buildIssuesTable flattens all evaluation results into a sortable table of findings.

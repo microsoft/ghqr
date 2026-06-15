@@ -27,65 +27,10 @@ func NewScanPipelineBuilder() *ScanPipelineBuilder {
 	}
 }
 
-func (b *ScanPipelineBuilder) addStage(stage Stage) *ScanPipelineBuilder {
-	b.stages = append(b.stages, stage)
+// With appends a stage to the pipeline and returns the builder for chaining.
+func (b *ScanPipelineBuilder) With(s Stage) *ScanPipelineBuilder {
+	b.stages = append(b.stages, s)
 	return b
-}
-
-// WithInitialization adds the initialization stage.
-func (b *ScanPipelineBuilder) WithInitialization() *ScanPipelineBuilder {
-	return b.addStage(NewInitializationStage())
-}
-
-// WithLoadFromJSON adds the load-from-json replay stage. The stage self-skips
-// unless ScanParams.FromJSON is set.
-func (b *ScanPipelineBuilder) WithLoadFromJSON() *ScanPipelineBuilder {
-	return b.addStage(NewLoadFromJSONStage())
-}
-
-// WithEnterpriseScan adds the enterprise scanning stage.
-func (b *ScanPipelineBuilder) WithEnterpriseScan() *ScanPipelineBuilder {
-	return b.addStage(NewEnterpriseScanStage())
-}
-
-// WithEnterpriseDiscovery adds the enterprise discovery stage.
-func (b *ScanPipelineBuilder) WithEnterpriseDiscovery() *ScanPipelineBuilder {
-	return b.addStage(NewEnterpriseDiscoveryStage())
-}
-
-// WithOrganizationDiscovery adds the organization discovery stage.
-func (b *ScanPipelineBuilder) WithOrganizationDiscovery() *ScanPipelineBuilder {
-	return b.addStage(NewOrganizationDiscoveryStage())
-}
-
-// WithOrganizationScan adds the organization scanning stage.
-func (b *ScanPipelineBuilder) WithOrganizationScan() *ScanPipelineBuilder {
-	return b.addStage(NewOrganizationScanStage())
-}
-
-// WithOrgRepositoryDiscovery adds the org-repository discovery stage.
-func (b *ScanPipelineBuilder) WithOrgRepositoryDiscovery() *ScanPipelineBuilder {
-	return b.addStage(NewOrgRepositoryDiscoveryStage())
-}
-
-// WithRepositoryScan adds the individual repository scanning stage.
-func (b *ScanPipelineBuilder) WithRepositoryScan() *ScanPipelineBuilder {
-	return b.addStage(NewRepositoryScanStage())
-}
-
-// WithReportRendering adds the report rendering stage.
-func (b *ScanPipelineBuilder) WithReportRendering() *ScanPipelineBuilder {
-	return b.addStage(NewReportRenderingStage())
-}
-
-// WithEvaluation adds the evaluation stage.
-func (b *ScanPipelineBuilder) WithEvaluation() *ScanPipelineBuilder {
-	return b.addStage(NewEvaluationStage())
-}
-
-// WithGHESScan adds the GitHub Enterprise Server scanning stage.
-func (b *ScanPipelineBuilder) WithGHESScan() *ScanPipelineBuilder {
-	return b.addStage(NewGHESScanStage())
 }
 
 // Build creates the pipeline with all configured stages.
@@ -100,17 +45,17 @@ func (b *ScanPipelineBuilder) Build() *Pipeline {
 // ctx.Params.FromJSON in its Skip() method as a belt-and-braces guard.
 func (b *ScanPipelineBuilder) BuildDefault() *Pipeline {
 	return b.
-		WithInitialization().
-		WithLoadFromJSON().
-		WithGHESScan().
-		WithEnterpriseDiscovery().
-		WithEnterpriseScan().
-		WithOrganizationDiscovery().
-		WithOrganizationScan().
-		WithOrgRepositoryDiscovery().
-		WithRepositoryScan().
-		WithEvaluation().
-		WithReportRendering().
+		With(NewInitializationStage()).
+		With(NewLoadFromJSONStage()).
+		With(NewGHESScanStage()).
+		With(NewEnterpriseDiscoveryStage()).
+		With(NewEnterpriseScanStage()).
+		With(NewOrganizationDiscoveryStage()).
+		With(NewOrganizationScanStage()).
+		With(NewOrgRepositoryDiscoveryStage()).
+		With(NewRepositoryScanStage()).
+		With(NewEvaluationStage()).
+		With(NewReportRenderingStage()).
 		Build()
 }
 
