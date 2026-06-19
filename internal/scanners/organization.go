@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 
@@ -134,56 +135,87 @@ func (o *OrganizationScanner) scanSecurityAlerts(ctx context.Context) (*OrgSecur
 	}
 
 	var dependabotAlerts []dependabotAlert
-	depReq, err := o.client.NewRequest("GET",
-		fmt.Sprintf("orgs/%s/dependabot/alerts?state=open&per_page=100", o.org), nil)
-	if err == nil {
-		depResp, depErr := o.client.Do(ctx, depReq, &dependabotAlerts)
-		if depErr == nil {
-			result.Available = true
-			result.OpenDependabotAlerts = len(dependabotAlerts)
-			for _, a := range dependabotAlerts {
-				switch strings.ToLower(a.SecurityAdvisory.Severity) {
-				case "critical":
-					result.CriticalDependabot++
-				case "high":
-					result.HighDependabot++
-				}
-			}
-		} else if depResp != nil && (depResp.StatusCode == http.StatusNotFound || depResp.StatusCode == http.StatusForbidden) {
-			log.Debug().Str("organization", o.org).Msg("Dependabot org alerts not accessible (GHAS may not be licensed)")
-		} else {
-			log.Warn().Err(depErr).Str("organization", o.org).Msg("Failed to fetch dependabot org alerts")
+	after := ""
+	for {
+		depURL := fmt.Sprintf("orgs/%s/dependabot/alerts?state=open&per_page=100", o.org)
+		if after != "" {
+			depURL += "&after=" + url.QueryEscape(after)
 		}
+		depReq, err := o.client.NewRequest("GET", depURL, nil)
+		if err != nil {
+			break
+		}
+		depResp, depErr := o.client.Do(ctx, depReq, &dependabotAlerts)
+		if depErr != nil {
+			if depResp != nil && (depResp.StatusCode == http.StatusNotFound || depResp.StatusCode == http.StatusForbidden) {
+				log.Debug().Str("organization", o.org).Msg("Dependabot org alerts not accessible (GHAS may not be licensed)")
+			} else {
+				log.Warn().Err(depErr).Str("organization", o.org).Msg("Failed to fetch dependabot org alerts")
+			}
+			break
+		}
+		result.Available = true
+		result.OpenDependabotAlerts += len(dependabotAlerts)
+		for _, a := range dependabotAlerts {
+			switch strings.ToLower(a.SecurityAdvisory.Severity) {
+			case "critical":
+				result.CriticalDependabot++
+			case "high":
+				result.HighDependabot++
+			}
+		}
+		if depResp == nil || depResp.After == "" {
+			break
+		}
+		after = depResp.After
 	}
 
 	// Code scanning alerts.
 	type codeScanningAlert struct{}
 	var csAlerts []codeScanningAlert
-	csReq, err2 := o.client.NewRequest("GET",
-		fmt.Sprintf("orgs/%s/code-scanning/alerts?state=open&per_page=100", o.org), nil)
-	if err2 == nil {
-		csResp, csErr := o.client.Do(ctx, csReq, &csAlerts)
-		if csErr == nil {
-			result.Available = true
-			result.OpenCodeScanningAlerts = len(csAlerts)
-		} else if csResp != nil && (csResp.StatusCode == http.StatusNotFound || csResp.StatusCode == http.StatusForbidden) {
-			log.Debug().Str("organization", o.org).Msg("Code scanning org alerts not accessible")
+	for page := 1; ; {
+		csReq, err := o.client.NewRequest("GET",
+			fmt.Sprintf("orgs/%s/code-scanning/alerts?state=open&per_page=100&page=%d", o.org, page), nil)
+		if err != nil {
+			break
 		}
+		csResp, csErr := o.client.Do(ctx, csReq, &csAlerts)
+		if csErr != nil {
+			if csResp != nil && (csResp.StatusCode == http.StatusNotFound || csResp.StatusCode == http.StatusForbidden) {
+				log.Debug().Str("organization", o.org).Msg("Code scanning org alerts not accessible")
+			}
+			break
+		}
+		result.Available = true
+		result.OpenCodeScanningAlerts += len(csAlerts)
+		if csResp == nil || csResp.NextPage == 0 {
+			break
+		}
+		page = csResp.NextPage
 	}
 
 	// Secret scanning alerts.
 	type secretAlert struct{}
 	var ssAlerts []secretAlert
-	ssReq, err3 := o.client.NewRequest("GET",
-		fmt.Sprintf("orgs/%s/secret-scanning/alerts?state=open&per_page=100", o.org), nil)
-	if err3 == nil {
-		ssResp, ssErr := o.client.Do(ctx, ssReq, &ssAlerts)
-		if ssErr == nil {
-			result.Available = true
-			result.OpenSecretScanningAlerts = len(ssAlerts)
-		} else if ssResp != nil && (ssResp.StatusCode == http.StatusNotFound || ssResp.StatusCode == http.StatusForbidden) {
-			log.Debug().Str("organization", o.org).Msg("Secret scanning org alerts not accessible")
+	for page := 1; ; {
+		ssReq, err := o.client.NewRequest("GET",
+			fmt.Sprintf("orgs/%s/secret-scanning/alerts?state=open&per_page=100&page=%d", o.org, page), nil)
+		if err != nil {
+			break
 		}
+		ssResp, ssErr := o.client.Do(ctx, ssReq, &ssAlerts)
+		if ssErr != nil {
+			if ssResp != nil && (ssResp.StatusCode == http.StatusNotFound || ssResp.StatusCode == http.StatusForbidden) {
+				log.Debug().Str("organization", o.org).Msg("Secret scanning org alerts not accessible")
+			}
+			break
+		}
+		result.Available = true
+		result.OpenSecretScanningAlerts += len(ssAlerts)
+		if ssResp == nil || ssResp.NextPage == 0 {
+			break
+		}
+		page = ssResp.NextPage
 	}
 
 	return result, nil
