@@ -127,6 +127,58 @@ func TestScanSecurityAlerts_PaginatesAllPages(t *testing.T) {
 	}
 }
 
+func TestScanSecurityAlerts_EscapesDependabotAfterCursor(t *testing.T) {
+	const (
+		pathPrefix     = "/api/v3/orgs/test-org"
+		rawCursor      = "cursor with spaces&x=y"
+		encodedCursor  = "cursor+with+spaces%26x%3Dy"
+	)
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, pathPrefix+"/dependabot/alerts"):
+			after := r.URL.Query().Get("after")
+			if after == "" {
+				w.Header().Set("Link", `<http://example.test?after=`+encodedCursor+`>; rel="next"`)
+				writeDependabotAlerts(t, w, 1, "critical")
+				return
+			}
+			if after != rawCursor {
+				t.Fatalf("dependabot after = %q, want %q", after, rawCursor)
+			}
+			if !strings.Contains(r.URL.RawQuery, "after="+encodedCursor) {
+				t.Fatalf("dependabot raw query did not contain encoded cursor: %s", r.URL.RawQuery)
+			}
+			writeDependabotAlerts(t, w, 1, "high")
+			return
+		case strings.HasSuffix(r.URL.Path, pathPrefix+"/code-scanning/alerts"):
+			writeEmptyObjects(t, w, 0)
+			return
+		case strings.HasSuffix(r.URL.Path, pathPrefix+"/secret-scanning/alerts"):
+			writeEmptyObjects(t, w, 0)
+			return
+		}
+
+		t.Fatalf("unexpected request: %s", r.URL.String())
+	})
+
+	scanner, _ := newOrganizationTestScanner(t, handler)
+	alerts, err := scanner.scanSecurityAlerts(context.Background())
+	if err != nil {
+		t.Fatalf("scanSecurityAlerts: %v", err)
+	}
+
+	if alerts.OpenDependabotAlerts != 2 {
+		t.Fatalf("OpenDependabotAlerts = %d, want 2", alerts.OpenDependabotAlerts)
+	}
+	if alerts.CriticalDependabot != 1 {
+		t.Fatalf("CriticalDependabot = %d, want 1", alerts.CriticalDependabot)
+	}
+	if alerts.HighDependabot != 1 {
+		t.Fatalf("HighDependabot = %d, want 1", alerts.HighDependabot)
+	}
+}
+
 func writeDependabotAlerts(t *testing.T, w http.ResponseWriter, count int, severity string) {
 	t.Helper()
 	w.Header().Set("Content-Type", "application/json")
