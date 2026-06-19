@@ -5,6 +5,7 @@ package pipeline
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/microsoft/ghqr/internal/config"
 	"github.com/microsoft/ghqr/internal/scanners"
@@ -37,13 +38,21 @@ func (s *InitializationStage) Execute(ctx *ScanContext) error {
 	graphqlEndpoint := config.GraphQLEndpoint(hostname)
 	ctx.GraphQLClients[primaryClientKey] = scanners.NewGraphQLClient(clients.GraphQL, clients.HTTP, graphqlEndpoint)
 
-	user, _, err := ctx.Clients[primaryClientKey].REST.Users.Get(ctx.Ctx, "")
+	user, resp, err := ctx.Clients[primaryClientKey].REST.Users.Get(ctx.Ctx, "")
 	if err != nil {
+		if resp != nil && isGitHubAppUserEndpointForbidden(resp.StatusCode) {
+			log.Info().Msg("Authenticated to GitHub as App (installation token)")
+			return nil
+		}
 		return fmt.Errorf("GitHub authentication failed: %w", err)
 	}
 
 	log.Info().Str("user", user.GetLogin()).Msg("Authenticated to GitHub")
 	return nil
+}
+
+func isGitHubAppUserEndpointForbidden(statusCode int) bool {
+	return statusCode == http.StatusForbidden
 }
 
 func (s *InitializationStage) Skip(ctx *ScanContext) bool {
