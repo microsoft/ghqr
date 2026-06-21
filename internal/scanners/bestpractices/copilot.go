@@ -36,7 +36,7 @@ func (e *Evaluator) EvaluateCopilot(data *scanners.OrgCopilotData) *EvaluationRe
 			"https://docs.github.com/en/copilot/managing-copilot/managing-github-copilot-in-your-organization/managing-access-to-github-copilot-in-your-organization/granting-access-to-copilot-for-members-of-your-organization")
 	}
 
-	if data.PublicCodeSuggestions == "allowed" {
+	if data.PublicCodeSuggestions == "allowed" || data.PublicCodeSuggestions == "allow" {
 		e.addFinding(&findings, "org-cop-002", "")
 	}
 
@@ -53,6 +53,21 @@ func (e *Evaluator) EvaluateCopilot(data *scanners.OrgCopilotData) *EvaluationRe
 				"Monitor seat utilization regularly for cost efficiency",
 				"https://docs.github.com/en/copilot/managing-copilot/managing-github-copilot-in-your-organization/reviewing-activity-related-to-github-copilot-in-your-organization/reviewing-your-organization-s-copilot-seat-assignments")
 		}
+	}
+
+	// Copilot CLI policy — when enabled, members can use gh copilot and agent mode
+	if data.CLI == "enabled" {
+		e.addFinding(&findings, "org-cop-004", "")
+	}
+
+	// Copilot IDE chat policy
+	if data.IDEChat == "disabled" {
+		e.addFinding(&findings, "org-cop-005", "")
+	}
+
+	// Copilot platform chat (GitHub.com / mobile) policy
+	if data.PlatformChat == "enabled" {
+		e.addFinding(&findings, "org-cop-006", "")
 	}
 
 	return createResult(e, findings)

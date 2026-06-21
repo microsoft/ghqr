@@ -54,6 +54,8 @@ func (o *OrganizationScanner) extractSettings(org *github.Organization) *OrgSett
 
 // scanCopilot fetches Copilot billing settings for the org.
 // Returns nil (no error) when Copilot is not enabled for the org.
+// Uses a raw REST call to capture policy fields (ide_chat, platform_chat, cli)
+// that are not yet mapped in the go-github CopilotOrganizationDetails struct.
 func (o *OrganizationScanner) scanCopilot(ctx context.Context) (*OrgCopilotData, error) {
 	billing, resp, err := o.client.Copilot.GetCopilotBilling(ctx, o.org)
 	if err != nil {
@@ -67,7 +69,7 @@ func (o *OrganizationScanner) scanCopilot(ctx context.Context) (*OrgCopilotData,
 	data := &OrgCopilotData{
 		BillingEnabled:        true,
 		SeatManagementSetting: billing.SeatManagementSetting,
-		PublicCodeSuggestions: billing.PublicCodeSuggestions,
+		PublicCodeSuggestions:  billing.PublicCodeSuggestions,
 		CopilotChat:           billing.CopilotChat,
 	}
 	if sb := billing.SeatBreakdown; sb != nil {
@@ -75,7 +77,37 @@ func (o *OrganizationScanner) scanCopilot(ctx context.Context) (*OrgCopilotData,
 		data.ActiveThisCycle = sb.ActiveThisCycle
 		data.InactiveThisCycle = sb.InactiveThisCycle
 	}
+
+	// Fetch extended policy fields via raw REST (ide_chat, platform_chat, cli)
+	// that the go-github typed struct does not yet expose.
+	o.enrichCopilotPolicies(ctx, data)
+
 	return data, nil
+}
+
+// copilotBillingRaw captures the extended policy fields returned by
+// GET /orgs/{org}/copilot/billing that go-github does not map.
+type copilotBillingRaw struct {
+	IDEChat      string `json:"ide_chat"`
+	PlatformChat string `json:"platform_chat"`
+	CLI          string `json:"cli"`
+}
+
+// enrichCopilotPolicies supplements CopilotData with policy fields fetched via raw REST.
+func (o *OrganizationScanner) enrichCopilotPolicies(ctx context.Context, data *OrgCopilotData) {
+	req, err := o.client.NewRequest("GET", fmt.Sprintf("orgs/%s/copilot/billing", o.org), nil)
+	if err != nil {
+		log.Debug().Err(err).Str("organization", o.org).Msg("Failed to build raw copilot billing request")
+		return
+	}
+	var raw copilotBillingRaw
+	if _, err := o.client.Do(ctx, req, &raw); err != nil {
+		log.Debug().Err(err).Str("organization", o.org).Msg("Failed to fetch raw copilot billing (extended policies)")
+		return
+	}
+	data.IDEChat = raw.IDEChat
+	data.PlatformChat = raw.PlatformChat
+	data.CLI = raw.CLI
 }
 
 // scanActionsPermissions fetches org-level GitHub Actions workflow permissions.
@@ -301,6 +333,29 @@ func (o *OrganizationScanner) checkEMUStatus(ctx context.Context) (bool, error) 
 	return false, nil
 }
 
+// scanPrivateVulnerabilityReporting checks whether private vulnerability reporting
+// is enabled by default for new repositories in the organization.
+// The field is not mapped in the go-github Organization struct, so we make a raw
+// REST call and extract the boolean from the JSON response.
+func (o *OrganizationScanner) scanPrivateVulnerabilityReporting(ctx context.Context) (bool, error) {
+	req, err := o.client.NewRequest("GET", fmt.Sprintf("orgs/%s", o.org), nil)
+	if err != nil {
+		return false, err
+	}
+	var raw struct {
+		PVREnabled bool `json:"private_vulnerability_reporting_enabled_for_new_repositories"`
+	}
+	resp, err := o.client.Do(ctx, req, &raw)
+	if err != nil {
+		if resp != nil && (resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusForbidden) {
+			log.Debug().Str("organization", o.org).Msg("PVR setting not accessible")
+			return false, nil
+		}
+		return false, fmt.Errorf("failed to get PVR setting: %w", err)
+	}
+	return raw.PVREnabled, nil
+}
+
 // ScanAll retrieves organization settings and Copilot info.
 // Independent sub-scans run concurrently to minimize wall-clock time.
 func (o *OrganizationScanner) ScanAll(ctx context.Context) (*OrganizationData, error) {
@@ -358,6 +413,14 @@ func (o *OrganizationScanner) ScanAll(ctx context.Context) (*OrganizationData, e
 		secMgrs, secMgrsErr = o.scanSecurityManagers(ctx)
 	}()
 
+	var pvrEnabled bool
+	var pvrErr error
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		pvrEnabled, pvrErr = o.scanPrivateVulnerabilityReporting(ctx)
+	}()
+
 	wg.Wait()
 
 	// Collect results — warn on errors, never fail the whole scan.
@@ -389,6 +452,12 @@ func (o *OrganizationScanner) ScanAll(ctx context.Context) (*OrganizationData, e
 		log.Warn().Err(secMgrsErr).Str("organization", o.org).Msg("Failed to scan security managers")
 	} else {
 		data.SecurityManagers = secMgrs
+	}
+
+	if pvrErr != nil {
+		log.Warn().Err(pvrErr).Str("organization", o.org).Msg("Failed to scan private vulnerability reporting setting")
+	} else {
+		data.Settings.Security.PrivateVulnerabilityReportingForNewRepos = pvrEnabled
 	}
 
 	log.Info().
