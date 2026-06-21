@@ -63,6 +63,9 @@ func (e *Evaluator) EvaluateOrgSecurityDefaults(settings *scanners.OrgSecurity) 
 	if !settings.AdvancedSecurityForNewRepos {
 		e.addFinding(&findings, "org-def-006", "")
 	}
+	if !settings.PrivateVulnerabilityReportingForNewRepos {
+		e.addFinding(&findings, "org-def-007", "")
+	}
 
 	return createResult(e, findings)
 }

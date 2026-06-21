@@ -30,3 +30,36 @@
   learnMore: https://docs.github.com/en/copilot/managing-copilot/managing-github-copilot-in-your-organization/reviewing-activity-related-to-github-copilot-in-your-organization/reviewing-your-organization-s-copilot-seat-assignments
   tags: [copilot, cost]
   enabled: true
+
+- id: org-cop-004
+  scope: organization
+  title: Copilot CLI access enabled for the organization
+  category: copilot_security
+  severity: info
+  description: Copilot CLI (gh copilot) is enabled for this organization, which also enables agent mode capabilities. Members can use Copilot to execute terminal commands and perform autonomous coding tasks.
+  recommendation: Review whether CLI and agent mode access is appropriate for your organization's security posture. Consider restricting to specific teams if broad access is not needed.
+  learnMore: https://docs.github.com/en/copilot/managing-copilot/managing-github-copilot-in-your-organization/managing-policies-for-copilot-in-your-organization
+  tags: [copilot, security, agent]
+  enabled: true
+
+- id: org-cop-005
+  scope: organization
+  title: Copilot IDE chat is disabled
+  category: copilot_features
+  severity: low
+  description: Copilot Chat in IDEs (VS Code, JetBrains, etc.) is disabled for this organization. Members cannot use Copilot Chat for code explanations, debugging assistance, or inline suggestions in their IDE.
+  recommendation: Consider enabling IDE chat to maximize Copilot's value for developers. IDE chat is the most impactful Copilot feature for developer productivity.
+  learnMore: https://docs.github.com/en/copilot/managing-copilot/managing-github-copilot-in-your-organization/managing-policies-for-copilot-in-your-organization
+  tags: [copilot, features, productivity]
+  enabled: true
+
+- id: org-cop-006
+  scope: organization
+  title: Copilot platform chat enabled (GitHub.com / mobile)
+  category: copilot_security
+  severity: info
+  description: Copilot Chat on GitHub.com and GitHub Mobile is enabled. Members can interact with Copilot in the browser and on mobile devices, which may expose code context outside the IDE.
+  recommendation: Ensure your data governance policies cover Copilot usage on web and mobile platforms. Review content exclusion settings if sensitive repositories exist.
+  learnMore: https://docs.github.com/en/copilot/managing-copilot/managing-github-copilot-in-your-organization/managing-policies-for-copilot-in-your-organization
+  tags: [copilot, security, governance]
+  enabled: true

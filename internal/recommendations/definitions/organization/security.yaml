@@ -129,3 +129,14 @@
   learnMore: https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
   tags: [ghas, security, defaults]
   enabled: true
+
+- id: org-def-007
+  scope: organization
+  title: Private vulnerability reporting not enabled by default for new repositories
+  category: security
+  severity: medium
+  description: Private vulnerability reporting is not automatically enabled for new repositories. Without this, security researchers have no private channel to report vulnerabilities, increasing the risk of public disclosure before a fix is ready.
+  recommendation: Enable 'Private vulnerability reporting' in Organization → Settings → Code security and analysis to allow security researchers to privately report vulnerabilities for all new repositories.
+  learnMore: https://docs.github.com/en/code-security/security-advisories/working-with-repository-security-advisories/configuring-private-vulnerability-reporting-for-a-repository
+  tags: [security, vulnerability_reporting, defaults]
+  enabled: true

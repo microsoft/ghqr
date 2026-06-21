@@ -34,12 +34,13 @@ type OrgSecurity struct {
 	EMUEnabled bool `json:"emu_enabled"`
 
 	// Org-wide defaults applied to new repositories
-	AdvancedSecurityForNewRepos             bool `json:"advanced_security_enabled_for_new_repos"`
-	DependabotAlertsForNewRepos             bool `json:"dependabot_alerts_enabled_for_new_repos"`
-	DependabotSecurityUpdatesForNewRepos    bool `json:"dependabot_security_updates_enabled_for_new_repos"`
-	DependencyGraphForNewRepos              bool `json:"dependency_graph_enabled_for_new_repos"`
-	SecretScanningForNewRepos               bool `json:"secret_scanning_enabled_for_new_repos"`
-	SecretScanningPushProtectionForNewRepos bool `json:"secret_scanning_push_protection_enabled_for_new_repos"`
+	AdvancedSecurityForNewRepos                    bool `json:"advanced_security_enabled_for_new_repos"`
+	DependabotAlertsForNewRepos                    bool `json:"dependabot_alerts_enabled_for_new_repos"`
+	DependabotSecurityUpdatesForNewRepos           bool `json:"dependabot_security_updates_enabled_for_new_repos"`
+	DependencyGraphForNewRepos                     bool `json:"dependency_graph_enabled_for_new_repos"`
+	SecretScanningForNewRepos                      bool `json:"secret_scanning_enabled_for_new_repos"`
+	SecretScanningPushProtectionForNewRepos         bool `json:"secret_scanning_push_protection_enabled_for_new_repos"`
+	PrivateVulnerabilityReportingForNewRepos        bool `json:"private_vulnerability_reporting_enabled_for_new_repos"`
 }
 
 // OrgCopilotData holds GitHub Copilot billing and policy information for an org.
@@ -47,11 +48,17 @@ type OrgCopilotData struct {
 	// BillingEnabled is false when GetCopilotBilling returns a 404 (no Copilot subscription).
 	BillingEnabled        bool   `json:"billing_enabled"`
 	SeatManagementSetting string `json:"seat_management_setting,omitempty"`
-	PublicCodeSuggestions string `json:"public_code_suggestions,omitempty"`
+	PublicCodeSuggestions  string `json:"public_code_suggestions,omitempty"`
 	CopilotChat           string `json:"copilot_chat,omitempty"`
-	TotalSeats            int    `json:"total_seats"`
-	ActiveThisCycle       int    `json:"active_this_cycle"`
-	InactiveThisCycle     int    `json:"inactive_this_cycle"`
+	// IDEChat controls whether Copilot Chat is available in IDEs (e.g. VS Code, JetBrains).
+	IDEChat string `json:"ide_chat,omitempty"`
+	// PlatformChat controls whether Copilot Chat is available on GitHub.com / mobile.
+	PlatformChat string `json:"platform_chat,omitempty"`
+	// CLI controls whether Copilot is available in the CLI (gh copilot).
+	CLI string `json:"cli,omitempty"`
+	TotalSeats    int `json:"total_seats"`
+	ActiveThisCycle   int `json:"active_this_cycle"`
+	InactiveThisCycle int `json:"inactive_this_cycle"`
 }
 
 // OrgActionsPermissions holds GitHub Actions workflow permission settings.
