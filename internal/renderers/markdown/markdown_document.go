@@ -33,6 +33,9 @@ func generateMarkdown(report *renderers.ScanReport) string {
 	sb.WriteString(fmt.Sprintf("**Generated:** %s\n", time.Now().Format("January 2, 2006")))
 	sb.WriteString(fmt.Sprintf("**Scan Coverage:** %d enterprises / %d GHES instances / %d organizations / %d repositories\n\n",
 		len(report.Enterprises), len(report.GHES), len(report.Organizations), len(report.Repositories)))
+	sb.WriteString("> 📊 This report provides an **executive-level summary**. Repository-level findings are\n")
+	sb.WriteString("> aggregated with affected-repository counts. For the complete per-repository breakdown,\n")
+	sb.WriteString("> refer to the accompanying **Excel report** (`.xlsx`) or the **JSON output** (`.json`).\n\n")
 	sb.WriteString("---\n\n")
 
 	// === Executive Summary ===
@@ -65,10 +68,6 @@ func generateMarkdown(report *renderers.ScanReport) string {
 
 	// === Manual Checks ===
 	sb.WriteString(generateManualChecks())
-	sb.WriteString("---\n\n")
-
-	// === Appendix ===
-	sb.WriteString(generateAppendix(report))
 
 	return sb.String()
 }

@@ -67,62 +67,85 @@ func generateRemediationPlan(allFindings []entityFindings) string {
 }
 
 // renderPlanTable renders the priority action table for a sprint.
+// Entities are not listed individually; only the count of affected entities
+// is shown, keeping the markdown report at executive-report size.
 func renderPlanTable(items []planItem) string {
 	if len(items) == 0 {
 		return "*No items in this phase.*\n"
 	}
 
 	var sb strings.Builder
-	sb.WriteString("| Priority | Entity | Action | Category | Effort | Owner |\n")
-	sb.WriteString("|----------|--------|--------|----------|--------|-------|\n")
+	sb.WriteString("| Priority | Action | Category | Affected Entities | Effort | Owner |\n")
+	sb.WriteString("|----------|--------|----------|-------------------|--------|-------|\n")
 
 	// Deduplicate: group same issue+category across entities.
 	type dedupeKey struct {
 		Issue    string
 		Category string
 	}
-	entitySets := map[dedupeKey]map[string]struct{}{}
-	recByKey := map[dedupeKey]recommendation{}
+	type dedupeEntry struct {
+		Rec        recommendation
+		EntitySets map[string]map[string]bool // entityType -> set of entity names
+	}
+	entries := map[dedupeKey]*dedupeEntry{}
 	keyOrder := make([]dedupeKey, 0, len(items))
 
 	for _, item := range items {
 		key := dedupeKey{Issue: item.Rec.Issue, Category: item.Rec.Category}
-		if _, ok := entitySets[key]; !ok {
-			entitySets[key] = map[string]struct{}{}
-			recByKey[key] = item.Rec
+		if e, ok := entries[key]; ok {
+			if e.EntitySets[entityTypeOf(item.Entity, items)] == nil {
+				e.EntitySets[entityTypeOf(item.Entity, items)] = map[string]bool{}
+			}
+			e.EntitySets[entityTypeOf(item.Entity, items)][item.Entity] = true
+		} else {
+			eType := entityTypeOf(item.Entity, items)
+			entries[key] = &dedupeEntry{
+				Rec: item.Rec,
+				EntitySets: map[string]map[string]bool{
+					eType: {item.Entity: true},
+				},
+			}
 			keyOrder = append(keyOrder, key)
 		}
-		entitySets[key][item.Entity] = struct{}{}
 	}
 
 	priority := 1
 	for _, key := range keyOrder {
-		entitySet := entitySets[key]
-		uniqueEntities := make([]string, 0, len(entitySet))
-		for e := range entitySet {
-			uniqueEntities = append(uniqueEntities, e)
-		}
-		sort.Strings(uniqueEntities)
-
-		rec := recByKey[key]
-		effort := estimateEffort(rec)
-		displayCat := categoryDisplayNames[rec.Category]
+		entry := entries[key]
+		effort := estimateEffort(entry.Rec)
+		displayCat := categoryDisplayNames[entry.Rec.Category]
 		if displayCat == "" {
-			displayCat = rec.Category
+			displayCat = entry.Rec.Category
 		}
 
-		sb.WriteString(fmt.Sprintf("| %d | %s | %s | %s | %s | %s |\n",
+		// Build "N entities" label.
+		totalEntities := 0
+		for _, set := range entry.EntitySets {
+			totalEntities += len(set)
+		}
+
+		sb.WriteString(fmt.Sprintf("| %d | %s | %s | %d | %s | %s |\n",
 			priority,
-			strings.Join(uniqueEntities, ", "),
-			rec.Recommendation,
+			entry.Rec.Recommendation,
 			displayCat,
+			totalEntities,
 			effort,
-			suggestOwner(rec.Category),
+			suggestOwner(entry.Rec.Category),
 		))
 		priority++
 	}
 
 	return sb.String()
+}
+
+// entityTypeOf returns the entity type for a given entity name within the plan items.
+func entityTypeOf(entity string, items []planItem) string {
+	// We don't have entity type in planItem directly, so infer from the name.
+	// Entities with "/" are repos (org/repo), others are orgs/enterprises.
+	if strings.Contains(entity, "/") {
+		return "repo"
+	}
+	return "other"
 }
 
 // estimateEffort provides S/M/L effort estimate based on the recommendation type.

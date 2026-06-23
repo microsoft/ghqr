@@ -4,11 +4,7 @@
 package markdown
 
 import (
-	"fmt"
-	"sort"
 	"strings"
-
-	"github.com/microsoft/ghqr/internal/renderers"
 )
 
 // generateManualChecks produces the manual checks table.
@@ -35,48 +31,6 @@ func generateManualChecks() string {
 	sb.WriteString("| Org webhooks | SSL verification enabled, shared secret set on all hooks | Org → Settings → Webhooks |\n")
 	sb.WriteString("| Org-level rulesets | At least one ruleset defined for repo governance | Org → Settings → Rules → Rulesets |\n")
 	sb.WriteString("\n")
-
-	return sb.String()
-}
-
-// generateAppendix produces the expandable appendix with all findings per entity.
-func generateAppendix(report *renderers.ScanReport) string {
-	var sb strings.Builder
-	sb.WriteString("## Appendix — Full Issue List\n\n")
-
-	allFindings := collectAllFindings(report)
-
-	for _, ef := range allFindings {
-		sb.WriteString(fmt.Sprintf("### %s\n\n", ef.EntityName))
-		sb.WriteString("<details>\n")
-		sb.WriteString("<summary>Expand all findings</summary>\n\n")
-		sb.WriteString("| Severity | Category | Finding | Action | Learn More |\n")
-		sb.WriteString("|----------|----------|---------|--------|------------|\n")
-
-		// Sort findings by severity.
-		sorted := make([]recommendation, len(ef.Findings))
-		copy(sorted, ef.Findings)
-		sort.Slice(sorted, func(i, j int) bool {
-			return severityOrder[sorted[i].Severity] < severityOrder[sorted[j].Severity]
-		})
-
-		for _, r := range sorted {
-			displayCat := categoryDisplayNames[r.Category]
-			if displayCat == "" {
-				displayCat = r.Category
-			}
-			learnMore := ""
-			if r.LearnMore != "" {
-				learnMore = fmt.Sprintf("[Link](%s)", r.LearnMore)
-			}
-			sb.WriteString(fmt.Sprintf("| %s %s | %s | %s | %s | %s |\n",
-				severityEmoji[r.Severity], titleCase(r.Severity),
-				displayCat, r.Issue, r.Recommendation, learnMore,
-			))
-		}
-
-		sb.WriteString("\n</details>\n\n")
-	}
 
 	return sb.String()
 }

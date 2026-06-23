@@ -60,20 +60,47 @@ func generateExecutiveSummaryText(report *renderers.ScanReport, counts map[strin
 }
 
 // generatePostureScorecard builds the per-entity scorecard table.
+// Enterprise, GHES, and organization entities are shown individually.
+// Repository findings are aggregated into a single summary row to keep
+// the markdown report at executive-report size.
 func generatePostureScorecard(report *renderers.ScanReport) string {
 	var sb strings.Builder
 	sb.WriteString("| Entity | Type | Critical | High | Medium | Low | Info |\n")
 	sb.WriteString("|--------|------|----------|------|--------|-----|------|\n")
 
 	allFindings := collectAllFindings(report)
+
+	// Accumulate repo totals for aggregation.
+	repoSeverity := map[string]int{}
+	reposWithFindings := 0
+
 	for _, ef := range allFindings {
 		counts := map[string]int{}
 		for _, r := range ef.Findings {
 			counts[r.Severity]++
 		}
+
+		if ef.EntityType == "repo" {
+			for sev, c := range counts {
+				repoSeverity[sev] += c
+			}
+			reposWithFindings++
+			continue
+		}
+
 		sb.WriteString(fmt.Sprintf("| %s | %s | %d | %d | %d | %d | %d |\n",
 			ef.EntityName, ef.EntityType,
 			counts["critical"], counts["high"], counts["medium"], counts["low"], counts["info"],
+		))
+	}
+
+	// Single aggregated row for all repositories.
+	if len(report.Repositories) > 0 {
+		label := fmt.Sprintf("Repositories — %d affected of %d scanned", reposWithFindings, len(report.Repositories))
+		sb.WriteString(fmt.Sprintf("| %s | repo | %d | %d | %d | %d | %d |\n",
+			label,
+			repoSeverity["critical"], repoSeverity["high"], repoSeverity["medium"],
+			repoSeverity["low"], repoSeverity["info"],
 		))
 	}
 

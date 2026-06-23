@@ -10,18 +10,22 @@ import (
 )
 
 // generateFindingsByCategory groups all findings by category and renders them.
+// Enterprise, GHES, and organization findings are listed individually.
+// Repository findings are deduplicated and aggregated with counts to keep
+// the markdown report at executive-report size.
 func generateFindingsByCategory(allFindings []entityFindings) string {
-	// Group by category.
 	type catFinding struct {
-		Entity string
-		Rec    recommendation
+		Entity     string
+		EntityType string
+		Rec        recommendation
 	}
 	grouped := map[string][]catFinding{}
 	for _, ef := range allFindings {
 		for _, r := range ef.Findings {
 			grouped[r.Category] = append(grouped[r.Category], catFinding{
-				Entity: ef.EntityName,
-				Rec:    r,
+				Entity:     ef.EntityName,
+				EntityType: ef.EntityType,
+				Rec:        r,
 			})
 		}
 	}
@@ -65,39 +69,105 @@ func generateFindingsByCategory(allFindings []entityFindings) string {
 			}
 		}
 
-		// Collect affected entities.
-		entitySet := map[string]bool{}
+		// Compute affected entity counts by type.
+		entitySets := map[string]map[string]bool{}
 		for _, f := range findings {
-			entitySet[f.Entity] = true
+			if entitySets[f.EntityType] == nil {
+				entitySets[f.EntityType] = map[string]bool{}
+			}
+			entitySets[f.EntityType][f.Entity] = true
 		}
-		entities := make([]string, 0, len(entitySet))
-		for e := range entitySet {
-			entities = append(entities, e)
-		}
-		sort.Strings(entities)
+		affectedParts := buildAffectedLabel(entitySets)
 
 		sb.WriteString(fmt.Sprintf("### %s\n\n", displayName))
 		sb.WriteString(fmt.Sprintf("**Risk Level:** %s %s\n", severityEmoji[highestSev], titleCase(highestSev)))
-		sb.WriteString(fmt.Sprintf("**Affected Entities:** %s\n\n", strings.Join(entities, ", ")))
+		sb.WriteString(fmt.Sprintf("**Affected Entities:** %s\n\n", affectedParts))
 
 		sb.WriteString("#### Findings\n\n")
-		sb.WriteString("| Severity | Entity | Finding | Action | Learn More |\n")
-		sb.WriteString("|----------|--------|---------|--------|------------|\n")
 
-		// Sort findings within category by severity.
-		sort.Slice(findings, func(i, j int) bool {
-			return severityOrder[findings[i].Rec.Severity] < severityOrder[findings[j].Rec.Severity]
-		})
-
+		// Separate non-repo findings (shown individually) from repo findings (aggregated).
+		var nonRepoFindings []catFinding
+		var repoFindings []catFinding
 		for _, f := range findings {
-			learnMore := ""
-			if f.Rec.LearnMore != "" {
-				learnMore = fmt.Sprintf("[Docs](%s)", f.Rec.LearnMore)
+			if f.EntityType == "repo" {
+				repoFindings = append(repoFindings, f)
+			} else {
+				nonRepoFindings = append(nonRepoFindings, f)
 			}
-			sb.WriteString(fmt.Sprintf("| %s %s | %s | %s | %s | %s |\n",
-				severityEmoji[f.Rec.Severity], titleCase(f.Rec.Severity),
-				f.Entity, f.Rec.Issue, f.Rec.Recommendation, learnMore,
-			))
+		}
+
+		// Non-repo findings: full individual table.
+		if len(nonRepoFindings) > 0 {
+			sb.WriteString("| Severity | Entity | Finding | Action | Learn More |\n")
+			sb.WriteString("|----------|--------|---------|--------|------------|\n")
+
+			sort.Slice(nonRepoFindings, func(i, j int) bool {
+				return severityOrder[nonRepoFindings[i].Rec.Severity] < severityOrder[nonRepoFindings[j].Rec.Severity]
+			})
+
+			for _, f := range nonRepoFindings {
+				learnMore := ""
+				if f.Rec.LearnMore != "" {
+					learnMore = fmt.Sprintf("[Docs](%s)", f.Rec.LearnMore)
+				}
+				sb.WriteString(fmt.Sprintf("| %s %s | %s | %s | %s | %s |\n",
+					severityEmoji[f.Rec.Severity], titleCase(f.Rec.Severity),
+					f.Entity, f.Rec.Issue, f.Rec.Recommendation, learnMore,
+				))
+			}
+			sb.WriteString("\n")
+		}
+
+		// Repo findings: deduplicated and aggregated.
+		if len(repoFindings) > 0 {
+			if len(nonRepoFindings) > 0 {
+				sb.WriteString("**Repository-level findings (aggregated):**\n\n")
+			}
+			sb.WriteString("| Severity | Finding | Action | Repos Affected | Learn More |\n")
+			sb.WriteString("|----------|---------|--------|----------------|------------|\n")
+
+			type repoGroup struct {
+				Rec      recommendation
+				RepoSet  map[string]bool
+				KeyOrder int
+			}
+			groups := map[string]*repoGroup{}
+			var groupOrder []string
+
+			for _, f := range repoFindings {
+				key := f.Rec.groupKey()
+				if g, ok := groups[key]; ok {
+					g.RepoSet[f.Entity] = true
+				} else {
+					groups[key] = &repoGroup{
+						Rec:     f.Rec,
+						RepoSet: map[string]bool{f.Entity: true},
+					}
+					groupOrder = append(groupOrder, key)
+				}
+			}
+
+			// Sort groups by severity.
+			sort.Slice(groupOrder, func(i, j int) bool {
+				gi := groups[groupOrder[i]]
+				gj := groups[groupOrder[j]]
+				if severityOrder[gi.Rec.Severity] != severityOrder[gj.Rec.Severity] {
+					return severityOrder[gi.Rec.Severity] < severityOrder[gj.Rec.Severity]
+				}
+				return len(gi.RepoSet) > len(gj.RepoSet)
+			})
+
+			for _, key := range groupOrder {
+				g := groups[key]
+				learnMore := ""
+				if g.Rec.LearnMore != "" {
+					learnMore = fmt.Sprintf("[Docs](%s)", g.Rec.LearnMore)
+				}
+				sb.WriteString(fmt.Sprintf("| %s %s | %s | %s | %d | %s |\n",
+					severityEmoji[g.Rec.Severity], titleCase(g.Rec.Severity),
+					g.Rec.Issue, g.Rec.Recommendation, len(g.RepoSet), learnMore,
+				))
+			}
 		}
 
 		sb.WriteString("\n#### Why This Matters\n\n")
@@ -106,6 +176,36 @@ func generateFindingsByCategory(allFindings []entityFindings) string {
 	}
 
 	return sb.String()
+}
+
+// buildAffectedLabel produces a human-readable label like
+// "1 enterprise, 3 organizations, 4522 repositories".
+func buildAffectedLabel(entitySets map[string]map[string]bool) string {
+	typeLabels := []struct {
+		key      string
+		singular string
+		plural   string
+	}{
+		{"enterprise", "enterprise", "enterprises"},
+		{"ghes", "GHES instance", "GHES instances"},
+		{"org", "organization", "organizations"},
+		{"repo", "repository", "repositories"},
+	}
+
+	var parts []string
+	for _, tl := range typeLabels {
+		if s, ok := entitySets[tl.key]; ok && len(s) > 0 {
+			label := tl.singular
+			if len(s) > 1 {
+				label = tl.plural
+			}
+			parts = append(parts, fmt.Sprintf("%d %s", len(s), label))
+		}
+	}
+	if len(parts) == 0 {
+		return "—"
+	}
+	return strings.Join(parts, ", ")
 }
 
 // categoryRiskDescription returns a short business risk explanation for each category.
