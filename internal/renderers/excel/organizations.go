@@ -49,8 +49,8 @@ func buildOrganizationsTable(results map[string]interface{}) [][]string {
 			continue
 		}
 		name := strings.TrimPrefix(key, "organization:")
-		orgData, ok := val.(*scanners.OrganizationData)
-		if !ok {
+		orgData := asType[scanners.OrganizationData](val)
+		if orgData == nil {
 			continue
 		}
 

@@ -48,8 +48,8 @@ func buildRepositoriesTable(results map[string]interface{}) [][]string {
 			continue
 		}
 		name := strings.TrimPrefix(key, "repository:")
-		repoData, ok := val.(*scanners.RepositoryData)
-		if !ok {
+		repoData := asType[scanners.RepositoryData](val)
+		if repoData == nil {
 			continue
 		}
 

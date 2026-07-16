@@ -75,6 +75,8 @@ func CreateExcelReport(results map[string]interface{}, outputName string) {
 	renderOrganizations(f, results, styles)
 	renderRepositories(f, results, styles)
 	renderBranchProtection(f, results, styles)
+	renderBudgets(f, results, styles)
+	renderGHAS(f, results, styles)
 	renderIssues(f, results, styles)
 
 	// Remove the default empty "Sheet1" that excelize creates.

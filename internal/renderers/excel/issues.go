@@ -98,6 +98,12 @@ func buildIssuesTable(results map[string]interface{}) [][]string {
 		case strings.HasPrefix(key, "evaluation:enterprise_security_alerts:"):
 			entityType = "enterprise_security_alerts"
 			name = strings.TrimPrefix(key, "evaluation:enterprise_security_alerts:")
+		case strings.HasPrefix(key, "evaluation:enterprise_ghas:"):
+			entityType = "enterprise_ghas"
+			name = strings.TrimPrefix(key, "evaluation:enterprise_ghas:")
+		case strings.HasPrefix(key, "evaluation:enterprise_budgets:"):
+			entityType = "enterprise_budgets"
+			name = strings.TrimPrefix(key, "evaluation:enterprise_budgets:")
 		case strings.HasPrefix(key, "evaluation:security_managers:"):
 			entityType = "security_managers"
 			name = strings.TrimPrefix(key, "evaluation:security_managers:")
