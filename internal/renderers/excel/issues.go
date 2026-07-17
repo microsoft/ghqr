@@ -22,9 +22,7 @@ func renderIssues(f *excelize.File, results map[string]interface{}, styles *Styl
 	headers := []string{"Type", "Name", "Severity", "Category", "Issue", "Recommendation", "Learn More"}
 
 	data := buildIssuesTable(results)
-	rows := make([][]string, 0, len(data)+1)
-	rows = append(rows, headers)
-	rows = append(rows, data...)
+	rows := append([][]string{headers}, data...)
 	streamSheet(f, sheet, rows, styles)
 }
 
