@@ -30,9 +30,7 @@ func renderOrganizations(f *excelize.File, results map[string]interface{}, style
 	}
 
 	data := buildOrganizationsTable(results)
-	rows := make([][]string, 0, len(data)+1)
-	rows = append(rows, headers)
-	rows = append(rows, data...)
+	rows := append([][]string{headers}, data...)
 	streamSheet(f, sheet, rows, styles)
 }
 
