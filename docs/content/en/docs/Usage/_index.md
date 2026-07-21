@@ -6,7 +6,14 @@ weight: 3
 
 ## Authentication
 
-**GitHub Quick Review (ghqr)** requires a GitHub Personal Access Token (PAT). Set the `GITHUB_TOKEN` environment variable before running any scan.
+**GitHub Quick Review (ghqr)** resolves credentials via a chain, similar to Azure's `DefaultAzureCredential`:
+
+1. `GH_TOKEN` environment variable
+2. `GITHUB_TOKEN` environment variable
+3. **`gh` CLI config** — run `gh auth login` once; ghqr picks it up automatically
+4. System keyring (macOS Keychain, Linux Secret Service)
+
+For GHES instances, run `gh auth login --hostname <ghes-host>` or set `GH_TOKEN`. Note: `GITHUB_TOKEN` is scoped to github.com/ghe.com only (see CVE-2024-53859) — for GHES it is accepted as a backward-compat fallback only.
 
 ### Required Token Scopes for GitHub.com
 
@@ -30,7 +37,7 @@ Create a Personal Access Token on your GHES instance with these scopes:
 | `repo` | Read repository settings and security features |
 | `read:audit_log` | Read audit log events |
 
-> **Note:** For GHES, ghqr reads the token from `GH_TOKEN` first, then falls back to `GITHUB_TOKEN`. Tokens without `site_admin` produce a degraded scan: license, admin stats, audit log, and management settings are reported as unavailable rather than treated as misconfigured.
+> **Note:** For GHES, ghqr resolves the token via: `GH_TOKEN` env var → `gh` CLI config (run `gh auth login --hostname <host>`) → system keyring → `GITHUB_TOKEN` (backward-compat fallback). Tokens without `site_admin` produce a degraded scan: license, admin stats, audit log, and management settings are reported as unavailable rather than treated as misconfigured.
 
 ## GitHub Enterprise Cloud with Data Residency (GHE.com)
 
@@ -56,6 +63,11 @@ Specify your hostname using either:
 ### Scan a Single Organization
 
 ```bash
+# Option A: authenticate with gh CLI (no env var needed)
+gh auth login
+ghqr scan -o my-org
+
+# Option B: set token manually
 export GITHUB_TOKEN=<your-personal-access-token>
 ghqr scan -o my-org
 ```
@@ -69,6 +81,11 @@ ghqr scan -e my-enterprise
 ### Scan a GitHub Enterprise Server Instance
 
 ```bash
+# Option A: authenticate with gh CLI (recommended)
+gh auth login --hostname ghes.example.com
+ghqr scan --ghes ghes.example.com
+
+# Option B: set token manually
 export GH_TOKEN=<your-ghes-personal-access-token>
 ghqr scan --ghes ghes.example.com
 ```

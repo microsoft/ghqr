@@ -73,40 +73,59 @@ func TestGHESToken_Precedence(t *testing.T) {
 	// GH_TOKEN only -> returned as-is.
 	t.Setenv("GH_TOKEN", "gh")
 	t.Setenv("GITHUB_TOKEN", "")
-	got, err := ghToken()
+	got, err := ghTokenForHost("github.com")
 	if err != nil {
-		t.Fatalf("ghToken() unexpected error: %v", err)
+		t.Fatalf("ghTokenForHost() unexpected error: %v", err)
 	}
 	if got != "gh" {
-		t.Errorf("ghToken() = %q, want %q", got, "gh")
+		t.Errorf("ghTokenForHost() = %q, want %q", got, "gh")
 	}
 
 	// GH_TOKEN takes precedence over GITHUB_TOKEN.
 	t.Setenv("GH_TOKEN", "gh")
 	t.Setenv("GITHUB_TOKEN", "github")
-	got, err = ghToken()
+	got, err = ghTokenForHost("github.com")
 	if err != nil {
-		t.Fatalf("ghToken() unexpected error: %v", err)
+		t.Fatalf("ghTokenForHost() unexpected error: %v", err)
 	}
 	if got != "gh" {
-		t.Errorf("ghToken() = %q, want %q (GH_TOKEN should win)", got, "gh")
+		t.Errorf("ghTokenForHost() = %q, want %q (GH_TOKEN should win)", got, "gh")
 	}
 
-	// GITHUB_TOKEN only -> returned as fallback.
+	// GITHUB_TOKEN only -> returned as fallback for github.com.
 	t.Setenv("GH_TOKEN", "")
 	t.Setenv("GITHUB_TOKEN", "github")
-	got, err = ghToken()
+	got, err = ghTokenForHost("github.com")
 	if err != nil {
-		t.Fatalf("ghToken() unexpected error: %v", err)
+		t.Fatalf("ghTokenForHost() unexpected error: %v", err)
 	}
 	if got != "github" {
-		t.Errorf("ghToken() = %q, want %q", got, "github")
+		t.Errorf("ghTokenForHost() = %q, want %q", got, "github")
 	}
 
-	// Nothing set -> error.
+	// Nothing set for a fake host -> error (go-gh has no config for a fake host).
 	t.Setenv("GH_TOKEN", "")
 	t.Setenv("GITHUB_TOKEN", "")
-	if _, err = ghToken(); err == nil {
-		t.Error("ghToken() expected error when no token is set, got nil")
+	t.Setenv("GH_ENTERPRISE_TOKEN", "")
+	t.Setenv("GITHUB_ENTERPRISE_TOKEN", "")
+	if _, err = ghTokenForHost("no-such-host.example.com"); err == nil {
+		t.Error("ghTokenForHost() expected error when no token is set, got nil")
+	}
+}
+
+func TestGHESToken_GHESFallbackAcceptsGITHUB_TOKEN(t *testing.T) {
+	// For non-github.com hosts go-gh does not use GITHUB_TOKEN (CVE-2024-53859
+	// fix), but ghqr preserves it as an explicit backward-compat fallback.
+	t.Setenv("GH_TOKEN", "")
+	t.Setenv("GH_ENTERPRISE_TOKEN", "")
+	t.Setenv("GITHUB_ENTERPRISE_TOKEN", "")
+	t.Setenv("GITHUB_TOKEN", "ghes-pat")
+
+	got, err := ghTokenForHost("ghes.example.com")
+	if err != nil {
+		t.Fatalf("ghTokenForHost() unexpected error: %v", err)
+	}
+	if got != "ghes-pat" {
+		t.Errorf("ghTokenForHost() = %q, want %q", got, "ghes-pat")
 	}
 }

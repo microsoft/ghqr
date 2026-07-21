@@ -45,8 +45,9 @@ Examples:
   ghqr mcp --mode http --addr :3000
 
 Configuration:
-  The server requires GITHUB_TOKEN environment variable to be set for
-  authentication with the GitHub API.`,
+  Authentication uses a credential chain: GH_TOKEN env var → GITHUB_TOKEN env var →
+  gh CLI config (run 'gh auth login') → system keyring. For GHES instances, run
+  'gh auth login --hostname <ghes-host>' or set GH_TOKEN.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		mode := mcpserver.ServerMode(mcpMode)

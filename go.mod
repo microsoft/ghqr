@@ -3,6 +3,7 @@ module github.com/microsoft/ghqr
 go 1.26.0
 
 require (
+	github.com/cli/go-gh/v2 v2.13.0
 	github.com/google/go-github/v83 v83.0.0
 	github.com/mark3labs/mcp-go v0.56.0
 	github.com/rs/zerolog v1.35.1
@@ -14,6 +15,7 @@ require (
 )
 
 require (
+	github.com/cli/safeexec v1.0.0 // indirect
 	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/google/jsonschema-go v0.4.3 // indirect
 	github.com/google/uuid v1.6.0 // indirect

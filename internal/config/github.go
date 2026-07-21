@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/cli/go-gh/v2/pkg/auth"
 	"github.com/google/go-github/v83/github"
 	"github.com/shurcooL/githubv4"
 )
@@ -35,8 +36,9 @@ type clientOptions struct {
 	// Leave empty for standard GitHub.com.
 	hostname string
 	// ghesBaseURL, when non-empty, enables GHES mode: the token is resolved
-	// via GH_TOKEN > GITHUB_TOKEN and the REST client is configured
-	// via WithEnterpriseURLs against the given appliance URL.
+	// via the credential chain (gh CLI config, GH_TOKEN, GITHUB_TOKEN) and
+	// the REST client is configured via WithEnterpriseURLs against the given
+	// appliance URL.
 	ghesBaseURL string
 }
 
@@ -49,10 +51,9 @@ func WithHostname(hostname string) ClientOption {
 
 // WithGHES configures NewClients to connect to a GitHub Enterprise Server
 // appliance at baseURL (e.g. "ghes.example.com" or "https://ghes.example.com").
-// In GHES mode the token is resolved with GH_TOKEN > GITHUB_TOKEN precedence
-// and the REST client is built with WithEnterpriseURLs.
-// The GraphQL field of the returned Clients is nil; GHES does not use GraphQL
-// in this tool.
+// In GHES mode the token is resolved via the credential chain (GH_TOKEN env var →
+// gh CLI config → system keyring; GITHUB_TOKEN is also accepted as a backward-compat
+// fallback) and the REST client is built with WithEnterpriseURLs.
 func WithGHES(baseURL string) ClientOption {
 	return func(o *clientOptions) { o.ghesBaseURL = baseURL }
 }
@@ -61,7 +62,7 @@ func WithGHES(baseURL string) ClientOption {
 // transport. Use WithHostname to target a GHE.com Data Residency instance, or
 // WithGHES to target a GitHub Enterprise Server appliance. Omit both options for
 // standard GitHub.com.
-// Returns an error when no token is found in the environment.
+// Returns an error when no token is found via the credential chain.
 func NewClients(ctx context.Context, opts ...ClientOption) (*Clients, error) {
 	o := &clientOptions{}
 	for _, opt := range opts {
@@ -72,7 +73,12 @@ func NewClients(ctx context.Context, opts ...ClientOption) (*Clients, error) {
 		return newGHESClients(ctx, o.ghesBaseURL)
 	}
 
-	token, err := ghToken()
+	hostname := o.hostname
+	if !IsCustomHost(hostname) {
+		hostname = "github.com"
+	}
+
+	token, err := ghTokenForHost(hostname)
 	if err != nil {
 		return nil, err
 	}
@@ -126,15 +132,30 @@ func RESTBaseURL(hostname string) string {
 	return "https://api.github.com/"
 }
 
-func ghToken() (string, error) {
-	token := os.Getenv("GH_TOKEN")
-	if token != "" {
+// ghTokenForHost resolves a GitHub authentication token for the given hostname
+// using a credential chain:
+//  1. GH_TOKEN env var (all hosts — ghqr convention, highest priority)
+//  2. GITHUB_TOKEN env var (all hosts — backward compat; note: go-gh scopes
+//     this to github.com/ghe.com only per CVE-2024-53859, but ghqr accepts it
+//     for GHES to avoid breaking existing workflows)
+//  3. gh CLI config file / system keyring via auth.TokenForHost (new!)
+//     This also picks up GH_ENTERPRISE_TOKEN / GITHUB_ENTERPRISE_TOKEN for GHES.
+func ghTokenForHost(hostname string) (string, error) {
+	// Check GH_TOKEN first — highest priority across all hosts.
+	if t := os.Getenv("GH_TOKEN"); t != "" {
+		return t, nil
+	}
+
+	// Check GITHUB_TOKEN for all hosts to preserve existing GHES behavior.
+	if t := os.Getenv("GITHUB_TOKEN"); t != "" {
+		return t, nil
+	}
+
+	// Fall back to gh CLI config, system keyring, and enterprise env vars
+	// (GH_ENTERPRISE_TOKEN / GITHUB_ENTERPRISE_TOKEN for GHES hosts).
+	if token, _ := auth.TokenForHost(hostname); token != "" {
 		return token, nil
 	}
 
-	token = os.Getenv("GITHUB_TOKEN")
-	if token == "" {
-		return "", fmt.Errorf("GitHub token not found: set GITHUB_TOKEN environment variable")
-	}
-	return token, nil
+	return "", fmt.Errorf("GitHub token not found for %q: run 'gh auth login --hostname %s', or set GH_TOKEN or GITHUB_TOKEN", hostname, hostname)
 }
