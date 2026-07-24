@@ -36,7 +36,8 @@ OUTPUT FORMATS:
 - JSON: Detailed structured data for programmatic analysis
 
 AUTHENTICATION:
-- GH_TOKEN/GITHUB_TOKEN must be valid for all specified GitHub.com/GHES targets
+- Credential chain: GH_TOKEN env var → GITHUB_TOKEN env var → gh CLI config (run 'gh auth login') → system keyring
+- For GHES instances, run 'gh auth login --hostname <ghes-host>' or set GH_TOKEN
 
 The scan produces comprehensive data that can be used to generate:
 - Security posture assessments
@@ -58,7 +59,7 @@ The scan produces comprehensive data that can be used to generate:
 		),
 		mcp.WithArray("ghes_instances",
 			mcp.Items(map[string]any{"type": "string"}),
-			mcp.Description("Optional array of GitHub Enterprise Server hostnames (without protocol) to scan. GH_TOKEN/GITHUB_TOKEN must be valid for all specified instances."),
+			mcp.Description("Optional array of GitHub Enterprise Server hostnames (without protocol) to scan. Run 'gh auth login --hostname <host>' or set GH_TOKEN for GHES instances."),
 		),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),

@@ -14,7 +14,7 @@ ghqr scan -o my-org --debug
 
 If you receive `401 Unauthorized` or `403 Forbidden` errors:
 
-1. Verify your `GITHUB_TOKEN` is set and valid.
+1. Check your authentication: run `gh auth status` to verify the `gh` CLI has a valid token, or confirm `GH_TOKEN`/`GITHUB_TOKEN` env vars are set.
 2. Check that your token has the required scopes (see [Usage - Authentication](../usage/#authentication)).
 3. For enterprise resources, ensure your token has `read:enterprise` scope and that SSO is authorized for the enterprise.
 4. If using GitHub Enterprise Cloud with Data Residency (GHE.com), ensure you pass `--hostname` or set `GH_HOST` (see [Usage - GHE.com](../usage/#github-enterprise-cloud-with-data-residency-ghecom)).
@@ -23,7 +23,7 @@ If you receive `401 Unauthorized` or `403 Forbidden` errors:
 
 If ghqr cannot connect to your GitHub Enterprise Server instance:
 
-1. Verify `GH_TOKEN` or `GITHUB_TOKEN` is set and was created on the GHES instance, not on github.com.
+1. Verify authentication for the GHES host: run `gh auth status --hostname ghes.example.com`, or confirm `GH_TOKEN` is set and was created on the GHES instance (not on github.com).
 2. Ensure the hostname is correct and reachable from your network (e.g. `ghes.example.com`).
 3. The token must have `site_admin` scope for full scanning capabilities.
 4. If some checks show "not available", the token may lack sufficient permissions. Re-create the token with `site_admin` scope.

@@ -18,9 +18,14 @@ import (
 // receives a WithGHES option. It uses the same oauth2 + rateLimitTransport
 // stack so GHES requests benefit from identical backoff behaviour.
 func newGHESClients(ctx context.Context, baseURL string) (*Clients, error) {
-	token, err := ghToken()
+	hostname, err := ghesHostname(baseURL)
 	if err != nil {
-		return nil, fmt.Errorf("GHES token not found: set GH_TOKEN or GITHUB_TOKEN environment variable")
+		return nil, fmt.Errorf("invalid GHES URL %q: %w", baseURL, err)
+	}
+
+	token, err := ghTokenForHost(hostname)
+	if err != nil {
+		return nil, err
 	}
 
 	apiURL, uploadURL, graphqlURL, err := ghesEndpointURLs(baseURL)
@@ -82,4 +87,17 @@ func normalizeGHESURL(raw string) (string, error) {
 	}
 	u.Path = strings.TrimSuffix(strings.TrimRight(u.Path, "/"), "/api/v3") + "/api/v3/"
 	return u.String(), nil
+}
+
+// ghesHostname extracts the bare hostname (host[:port]) from a GHES base URL
+// for use with the credential chain (auth.TokenForHost expects only the host).
+func ghesHostname(raw string) (string, error) {
+	if !strings.Contains(raw, "://") {
+		raw = "https://" + raw
+	}
+	u, err := url.Parse(raw)
+	if err != nil {
+		return "", err
+	}
+	return u.Host, nil
 }

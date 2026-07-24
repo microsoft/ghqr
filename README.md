@@ -87,7 +87,10 @@ make
 ## Quick Start Linux / macOS
 
 ```bash
-# 1. Set your GitHub token
+# Option A: Authenticate with the gh CLI (recommended — no env vars needed)
+gh auth login
+
+# Option B: Set a Personal Access Token manually
 export GITHUB_TOKEN=<your-personal-access-token>
 
 # 2. Scan an organization
@@ -97,12 +100,16 @@ ghqr scan -o my-org
 ghqr scan -e my-enterprise
 
 # 4. Scan a GitHub Enterprise Server (GHES) instance
-export GH_TOKEN=<your-ghes-personal-access-token>
+gh auth login --hostname ghes.example.com   # recommended
+# or: export GH_TOKEN=<your-ghes-personal-access-token>
 ghqr scan --ghes ghes.example.com
 ```
 ## Quick Start Windows
 ```PowerShell
-# 1. Set your GitHub token
+# Option A: Authenticate with the gh CLI (recommended — no env vars needed)
+gh auth login
+
+# Option B: Set a Personal Access Token manually
 $env:GITHUB_TOKEN="<your-personal-access-token>"
 
 # 2. Scan an organization
@@ -112,7 +119,8 @@ $env:GITHUB_TOKEN="<your-personal-access-token>"
 .\ghqr scan -e my-enterprise
 
 # 4. Scan a GitHub Enterprise Server (GHES) instance
-$env:GH_TOKEN="<your-ghes-personal-access-token>"
+gh auth login --hostname ghes.example.com   # recommended
+# or: $env:GH_TOKEN="<your-ghes-personal-access-token>"
 .\ghqr scan --ghes ghes.example.com
 
 ```
@@ -122,9 +130,14 @@ $env:GH_TOKEN="<your-ghes-personal-access-token>"
 
 ### Authentication
 
-**GitHub Quick Review (ghqr)** supports the following authentication methods:
+**GitHub Quick Review (ghqr)** resolves credentials via a chain, similar to Azure's `DefaultAzureCredential`:
 
-- **Personal Access Token (PAT)**: Set the `GITHUB_TOKEN` environment variable
+1. `GH_TOKEN` environment variable
+2. `GITHUB_TOKEN` environment variable
+3. **`gh` CLI config** — run `gh auth login` once and ghqr picks it up automatically
+4. System keyring (macOS Keychain, Linux Secret Service)
+
+For GHES, `GITHUB_TOKEN` is scoped to github.com only (CVE-2024-53859). Use `GH_TOKEN` or `gh auth login --hostname <ghes-host>` instead.
 
 #### Required Token Scopes (GitHub.com)
 
@@ -148,10 +161,7 @@ For GitHub Enterprise Server scanning, create a PAT on your GHES instance with t
 | `repo` | Read repository settings and security features |
 | `read:audit_log` | Read audit log events |
 
-The GHES token is read from `GH_TOKEN` or `GITHUB_TOKEN` (in that order).
-Tokens without `site_admin` produce a degraded scan: license, admin stats,
-audit log, and management settings are reported as unavailable rather than
-treated as misconfigured.
+The GHES token is read from `GH_TOKEN` first, then the `gh` CLI config (run `gh auth login --hostname <host>`), then `GITHUB_TOKEN` as a backward-compat fallback.
 
 ### GitHub Enterprise Cloud with Data Residency (GHE.com)
 
@@ -221,13 +231,17 @@ ghqr supports scanning on-premise GitHub Enterprise Server instances to assess s
 
 #### Setup
 
-1. **Set your GHES token** — Create a Personal Access Token on your GHES instance with `site_admin` scope:
+1. **Authenticate for your GHES instance** — Choose the recommended approach or use a PAT:
 
    ```bash
+   # Recommended: authenticate once with the gh CLI
+   gh auth login --hostname ghes.example.com
+
+   # Alternative: set a Personal Access Token
    export GH_TOKEN=<your-ghes-personal-access-token>
    ```
 
-   > ghqr reads the token from `GH_TOKEN` or `GITHUB_TOKEN` (in that order).
+   > ghqr resolves the GHES token via: `GH_TOKEN` env var → `gh` CLI config → system keyring → `GITHUB_TOKEN` (backward compat).
 
 2. **Run a GHES scan** — Pass the GHES hostname (without protocol) via the `--ghes` flag:
 
@@ -322,7 +336,7 @@ MCP `scan` tool accepts these optional array arguments:
 - `repositories` (`owner/repo`)
 - `ghes_instances` (GHES hostnames, for example `ghes.example.com`)
 
-When using `ghes_instances`, ensure `GH_TOKEN`/`GITHUB_TOKEN` is valid for all specified instances.
+When using `ghes_instances`, run `gh auth login --hostname <host>` or set `GH_TOKEN` for each GHES instance.
 
 ## Troubleshooting
 
@@ -338,7 +352,7 @@ ghqr scan -o my-org --debug
 
 If you receive `401 Unauthorized` or `403 Forbidden` errors:
 
-1. Verify your `GITHUB_TOKEN` is set and valid
+1. Verify your token is resolved: run `gh auth status` or check `GH_TOKEN`/`GITHUB_TOKEN` env vars
 2. Check that your token has the required scopes (see [Required Token Scopes](#required-token-scopes-githubcom))
 3. For enterprise resources, ensure your token has `read:enterprise` scope and that SSO is authorized for the enterprise
 4. If using GitHub Enterprise Cloud with Data Residency (GHE.com), ensure you pass `--hostname` or set `GH_HOST` (see [Data Residency](#github-enterprise-cloud-with-data-residency-ghecom))
@@ -347,7 +361,7 @@ If you receive `401 Unauthorized` or `403 Forbidden` errors:
 
 If ghqr cannot connect to your GHES instance:
 
-1. Verify `GH_TOKEN` or `GITHUB_TOKEN` is set and was created on the GHES instance (not on github.com)
+1. Verify authentication: run `gh auth status --hostname <ghes-host>`, or check that `GH_TOKEN` is set and was created on the GHES instance (not on github.com)
 2. Ensure the hostname is correct and reachable from your network (e.g. `ghes.example.com`)
 3. The token must have `site_admin` scope for full scanning capabilities
 4. If some checks show "not available", the token may lack sufficient permissions — re-create with `site_admin` scope
