@@ -3,7 +3,7 @@ module github.com/microsoft/ghqr
 go 1.26.0
 
 require (
-	github.com/cli/go-gh/v2 v2.16.0
+	github.com/cli/go-gh/v2 v2.16.1
 	github.com/google/go-github/v83 v83.0.0
 	github.com/mark3labs/mcp-go v1.0.0
 	github.com/rs/zerolog v1.35.1
