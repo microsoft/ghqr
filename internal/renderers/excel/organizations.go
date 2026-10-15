@@ -25,7 +25,8 @@ func renderOrganizations(f *excelize.File, results map[string]interface{}, style
 		"Organization", "Enterprise",
 		"Default Repo Permission", "Members Can Create Public Repos",
 		"2FA Required", "Web Commit Signoff Required",
-		"Advanced Security New Repos", "Dependabot Alerts New Repos",
+		"Advanced Security New Repos (legacy)", "Dependabot Alerts New Repos (legacy)",
+		"Default Code Security Config (New Repos)",
 		"Total Issues",
 	}
 
@@ -60,6 +61,7 @@ func buildOrganizationsTable(results map[string]interface{}) [][]string {
 		webCommitSignoff := ""
 		advSecNewRepos := ""
 		dependabotAlertsNewRepos := ""
+		defaultCodeSecurityConfig := ""
 
 		if s := orgData.Settings; s != nil {
 			defaultRepoPerm = s.Visibility.DefaultRepositoryPermission
@@ -72,6 +74,7 @@ func buildOrganizationsTable(results map[string]interface{}) [][]string {
 			webCommitSignoff = boolStr(s.Security.WebCommitSignoffRequired)
 			advSecNewRepos = boolStr(s.Security.AdvancedSecurityForNewRepos)
 			dependabotAlertsNewRepos = boolStr(s.Security.DependabotAlertsForNewRepos)
+			defaultCodeSecurityConfig = describeDefaultCodeSecurityConfigs(s.Security.CodeSecurityConfigurations)
 		}
 
 		total := ""
@@ -89,6 +92,7 @@ func buildOrganizationsTable(results map[string]interface{}) [][]string {
 			defaultRepoPerm, membersCanCreatePublic,
 			twoFA, webCommitSignoff,
 			advSecNewRepos, dependabotAlertsNewRepos,
+			defaultCodeSecurityConfig,
 			total,
 		}})
 	}
@@ -100,4 +104,32 @@ func buildOrganizationsTable(results map[string]interface{}) [][]string {
 		result = append(result, r.cols)
 	}
 	return result
+}
+
+// describeDefaultCodeSecurityConfigs renders the organization's default code security
+// configurations for new repositories as "scope: name" pairs, distinguishing data that
+// was not collected (empty), not readable, and readable with no default set ("none").
+func describeDefaultCodeSecurityConfigs(csc *scanners.OrgCodeSecurityConfigurations) string {
+	if csc == nil {
+		return ""
+	}
+	if !csc.DefaultsReadable {
+		return "not readable (" + csc.DefaultsUnavailableReason + ")"
+	}
+	parts := make([]string, 0, len(csc.DefaultConfigurations))
+	for _, d := range csc.DefaultConfigurations {
+		if d == nil {
+			continue
+		}
+		name := "unknown"
+		if cfg := d.GetConfiguration(); cfg != nil {
+			name = cfg.Name
+		}
+		parts = append(parts, d.GetDefaultForNewRepos()+": "+name)
+	}
+	if len(parts) == 0 {
+		return "none"
+	}
+	sort.Strings(parts)
+	return strings.Join(parts, "; ")
 }

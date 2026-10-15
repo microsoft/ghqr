@@ -5,6 +5,7 @@ package scanners
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -356,6 +357,83 @@ func (o *OrganizationScanner) scanPrivateVulnerabilityReporting(ctx context.Cont
 	return raw.PVREnabled, nil
 }
 
+// codeSecurityConfigPageSize is the maximum page size allowed by the code security
+// configurations endpoint.
+const codeSecurityConfigPageSize = 100
+
+// scanCodeSecurityConfigurations collects the organization's code security
+// configurations and the defaults applied to new repositories. These replace the
+// deprecated *_enabled_for_new_repositories organization fields.
+// The two endpoints are read independently and failures never abort the scan;
+// instead each side records whether it was readable and, if not, why.
+func (o *OrganizationScanner) scanCodeSecurityConfigurations(ctx context.Context) *OrgCodeSecurityConfigurations {
+	result := &OrgCodeSecurityConfigurations{}
+
+	configs, err := o.listCodeSecurityConfigurations(ctx)
+	if err != nil {
+		result.ConfigurationsUnavailableReason = o.codeSecurityConfigUnavailableReason(err, "code security configurations")
+	} else {
+		result.ConfigurationsReadable = true
+		result.Configurations = configs
+	}
+
+	defaults, _, err := o.client.Organizations.ListDefaultCodeSecurityConfigurations(ctx, o.org)
+	if err != nil {
+		result.DefaultsUnavailableReason = o.codeSecurityConfigUnavailableReason(err, "default code security configurations")
+	} else {
+		result.DefaultsReadable = true
+		result.DefaultConfigurations = defaults
+		if result.DefaultConfigurations == nil {
+			result.DefaultConfigurations = []*github.CodeSecurityConfigurationWithDefaultForNewRepos{}
+		}
+	}
+
+	return result
+}
+
+// listCodeSecurityConfigurations pages through all code security configurations
+// available to the organization. Partial results are discarded on error so that
+// an incomplete list is never reported as readable.
+func (o *OrganizationScanner) listCodeSecurityConfigurations(ctx context.Context) ([]*github.CodeSecurityConfiguration, error) {
+	all := []*github.CodeSecurityConfiguration{}
+	opts := &github.ListOrgCodeSecurityConfigurationOptions{PerPage: codeSecurityConfigPageSize}
+	seen := map[string]bool{}
+	for {
+		page, resp, err := o.client.Organizations.ListCodeSecurityConfigurations(ctx, o.org, opts)
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, page...)
+		if resp == nil || resp.After == "" {
+			return all, nil
+		}
+		if seen[resp.After] {
+			return nil, fmt.Errorf("code security configurations pagination repeated cursor %q", resp.After)
+		}
+		seen[resp.After] = true
+		opts.After = resp.After
+	}
+}
+
+// codeSecurityConfigUnavailableReason maps an API error to a
+// CodeSecurityConfigUnavailable* reason and logs it at an appropriate level.
+func (o *OrganizationScanner) codeSecurityConfigUnavailableReason(err error, what string) string {
+	var errResp *github.ErrorResponse
+	if errors.As(err, &errResp) && errResp.Response != nil {
+		switch errResp.Response.StatusCode {
+		case http.StatusForbidden:
+			log.Debug().Str("organization", o.org).
+				Msgf("%s not readable (requires organization owner or security manager role and read:org scope)", what)
+			return CodeSecurityConfigUnavailableForbidden
+		case http.StatusNotFound:
+			log.Debug().Str("organization", o.org).Msgf("%s not available", what)
+			return CodeSecurityConfigUnavailableNotFound
+		}
+	}
+	log.Warn().Err(err).Str("organization", o.org).Msgf("Failed to fetch %s", what)
+	return CodeSecurityConfigUnavailableError
+}
+
 // ScanAll retrieves organization settings and Copilot info.
 // Independent sub-scans run concurrently to minimize wall-clock time.
 func (o *OrganizationScanner) ScanAll(ctx context.Context) (*OrganizationData, error) {
@@ -421,6 +499,13 @@ func (o *OrganizationScanner) ScanAll(ctx context.Context) (*OrganizationData, e
 		pvrEnabled, pvrErr = o.scanPrivateVulnerabilityReporting(ctx)
 	}()
 
+	var codeSecurityConfigs *OrgCodeSecurityConfigurations
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		codeSecurityConfigs = o.scanCodeSecurityConfigurations(ctx)
+	}()
+
 	wg.Wait()
 
 	// Collect results — warn on errors, never fail the whole scan.
@@ -459,6 +544,8 @@ func (o *OrganizationScanner) ScanAll(ctx context.Context) (*OrganizationData, e
 	} else {
 		data.Settings.Security.PrivateVulnerabilityReportingForNewRepos = pvrEnabled
 	}
+
+	data.Settings.Security.CodeSecurityConfigurations = codeSecurityConfigs
 
 	log.Info().
 		Str("organization", o.org).

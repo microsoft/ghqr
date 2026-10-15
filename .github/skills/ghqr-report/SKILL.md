@@ -54,7 +54,14 @@ The ghqr JSON output contains the following top-level structure:
           "secret_scanning_push_protection_enabled_for_new_repos": true,
           "dependabot_alerts_enabled_for_new_repos": true,
           "dependabot_security_updates_enabled_for_new_repos": true,
-          "dependency_graph_enabled_for_new_repos": true
+          "dependency_graph_enabled_for_new_repos": true,
+          "code_security_configurations": {
+            "configurations_readable": true,
+            "configurations": [ { "id": 17, "name": "GitHub recommended", "target_type": "global", "secret_scanning": "enabled", "...": "..." } ],
+            "defaults_readable": false,
+            "defaults_unavailable_reason": "forbidden",
+            "default_configurations": null
+          }
         }
       },
       "evaluation": { "recommendations": [] }
@@ -66,6 +73,18 @@ The ghqr JSON output contains the following top-level structure:
 
 Each `evaluation` object contains:
 - `recommendations[]`: all findings (both hard issues and advisory items), each with `severity`, `category`, `issue`, `recommendation`, and an optional `learn_more` URL
+
+### Organization New-Repository Security Defaults
+
+GitHub has deprecated the organization `*_enabled_for_new_repos` fields in favour of **code security configurations**. An organization that sets its defaults through a default code security configuration can still report the legacy fields as `false`, and the `org-def-*` findings are still scored from those legacy fields. Before stating that new-repository defaults are disabled, check `settings.security.code_security_configurations`:
+
+- `default_configurations[]` lists the configuration applied to new repositories per scope (`default_for_new_repos`: `public`, `private_and_internal`, or `all`), with the full `configuration` (feature states such as `secret_scanning`, `dependabot_alerts`, `enforcement`).
+- `configurations[]` lists every configuration available to the organization.
+- `configurations_readable` / `defaults_readable` are independent. When `false`, the matching `*_unavailable_reason` is `forbidden` (token user is not an org owner or security manager, or lacks `read:org`), `not_found` (endpoint unavailable or access masked), or `error`. Report this as "not readable", never as "no default configured".
+- A readable empty array (`[]`) means no configuration / no default is set.
+- If `code_security_configurations` is absent, the scan predates this data; say it was not collected.
+
+When the legacy fields are `false` but a default configuration covers new repositories, say so explicitly next to the related `org-def-*` findings so the reader can tell the difference.
 
 ### Severity Levels
 | Severity | Meaning |
