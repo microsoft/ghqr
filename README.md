@@ -150,6 +150,8 @@ For GHES, `GITHUB_TOKEN` is scoped to github.com only (CVE-2024-53859). Use `GH_
 | `read:user` | Read user information |
 | `copilot` | Read Copilot seat and policy information |
 
+> **Note:** Organization code security configurations (`settings.security.code_security_configurations` in the JSON output) are read with `read:org`, but GitHub also requires the token user to be an **organization owner or security manager**. Otherwise ghqr records them as not readable (`*_readable: false` with a `*_unavailable_reason` of `forbidden`, `not_found`, or `error`) instead of failing the scan. These configurations replace the deprecated `*_enabled_for_new_repos` organization fields, which can report `false` for organizations that set defaults through a default code security configuration.
+
 #### Required Token Scopes (GHES)
 
 For GitHub Enterprise Server scanning, create a PAT on your GHES instance with these scopes:
