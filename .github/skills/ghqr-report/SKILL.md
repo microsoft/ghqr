@@ -64,7 +64,8 @@ The ghqr JSON output contains the following top-level structure:
           }
         }
       },
-      "evaluation": { "recommendations": [] }
+      "evaluation": { "recommendations": [] },
+      "org_security_defaults_evaluation": { "recommendations": [] }
     }
   },
   "repositories":  { "<owner/name>": { "evaluation": { "recommendations": [] } } }
@@ -76,7 +77,14 @@ Each `evaluation` object contains:
 
 ### Organization New-Repository Security Defaults
 
-GitHub has deprecated the organization `*_enabled_for_new_repos` fields in favour of **code security configurations**. An organization that sets its defaults through a default code security configuration can still report the legacy fields as `false`, and the `org-def-*` findings are still scored from those legacy fields. Before stating that new-repository defaults are disabled, check `settings.security.code_security_configurations`:
+GitHub has deprecated (and now ignores) the organization `*_enabled_for_new_repos` fields in favour of **code security configurations**. The `org-def-001`…`007` findings are reported in `org_security_defaults_evaluation` (separate from the organization `evaluation`) and are scored as follows:
+
+- **Defaults readable** (`defaults_readable: true`): the default code security configurations are authoritative and the legacy fields are ignored. Each rule must be `enabled` in the default for both public and private/internal new repositories (`all` covers both). `org-def-007` (private vulnerability reporting) only checks public new repositories. `org-def-006` requires both GitHub Code Security and GitHub Secret Protection. The finding text names the uncovered scope and why (no default, disabled or not set in a named configuration, conflicting values).
+- **Defaults not readable**: the legacy fields are used and the finding text says the default configurations could not be read and why.
+- **Malformed default data** (unknown scope, missing configuration): every `org-def-*` finding is raised with "could not be interpreted"; treat it as unverified rather than confirmed disabled.
+- **Section absent** (older scans): legacy behaviour, unchanged titles.
+
+Use `settings.security.code_security_configurations` to add context:
 
 - `default_configurations[]` lists the configuration applied to new repositories per scope (`default_for_new_repos`: `public`, `private_and_internal`, or `all`), with the full `configuration` (feature states such as `secret_scanning`, `dependabot_alerts`, `enforcement`).
 - `configurations[]` lists every configuration available to the organization.
@@ -84,7 +92,7 @@ GitHub has deprecated the organization `*_enabled_for_new_repos` fields in favou
 - A readable empty array (`[]`) means no configuration / no default is set.
 - If `code_security_configurations` is absent, the scan predates this data; say it was not collected.
 
-When the legacy fields are `false` but a default configuration covers new repositories, say so explicitly next to the related `org-def-*` findings so the reader can tell the difference.
+Quote the scope and reason from the finding text so the reader can distinguish "not covered for public repositories" from "not readable" or "disabled everywhere".
 
 ### Severity Levels
 | Severity | Meaning |
