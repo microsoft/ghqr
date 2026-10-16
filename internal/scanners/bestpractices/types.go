@@ -110,6 +110,20 @@ func (e *Evaluator) addFinding(findings *[]Issue, ruleID, titleOverride string) 
 	})
 }
 
+// addFindingWithDetail appends a finding whose message is the registry title
+// followed by a parenthesised detail. An empty detail keeps the registry title.
+func (e *Evaluator) addFindingWithDetail(findings *[]Issue, ruleID, detail string) {
+	if detail == "" || e.registry == nil {
+		e.addFinding(findings, ruleID, "")
+		return
+	}
+	def, ok := e.registry.Get(ruleID)
+	if !ok {
+		return
+	}
+	e.addFinding(findings, ruleID, def.Title+" ("+detail+")")
+}
+
 func addRecommendation(recommendations *[]Issue, severity, category, issue, recommendation string, learnMore ...string) {
 	url := ""
 	if len(learnMore) > 0 {
