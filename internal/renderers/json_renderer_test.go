@@ -97,6 +97,26 @@ func TestRenderJSON_EvaluationEmbedded(t *testing.T) {
 	}
 }
 
+func TestRenderJSON_OrgSecurityDefaultsEmbedded(t *testing.T) {
+	results := map[string]interface{}{
+		"organization:acme":                     map[string]interface{}{"login": "acme"},
+		"evaluation:org_security_defaults:acme": map[string]interface{}{"recommendations": []interface{}{}},
+	}
+
+	outPath, err := RenderJSON(results, filepath.Join(t.TempDir(), "defaults_report"))
+	if err != nil {
+		t.Fatalf("RenderJSON returned unexpected error: %v", err)
+	}
+
+	orgMap, ok := mustReadReport(t, outPath).Organizations["acme"].(map[string]interface{})
+	if !ok {
+		t.Fatal("organization value should be a map")
+	}
+	if _, has := orgMap["org_security_defaults_evaluation"]; !has {
+		t.Error("expected org_security_defaults_evaluation to be embedded in organization")
+	}
+}
+
 func TestRenderJSON_WriteError(t *testing.T) {
 	// Pass a path inside a non-existent directory hierarchy to force a write error.
 	outputName := filepath.Join(t.TempDir(), "nonexistent", "nested", "dir", "report")
