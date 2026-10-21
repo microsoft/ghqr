@@ -37,39 +37,6 @@ func (e *Evaluator) EvaluateEnterpriseAuditLog(data *scanners.EnterpriseAuditLog
 	return createResult(e, findings)
 }
 
-// EvaluateOrgSecurityDefaults checks org-wide security defaults applied to new repositories.
-func (e *Evaluator) EvaluateOrgSecurityDefaults(settings *scanners.OrgSecurity) *EvaluationResult {
-	if settings == nil {
-		return noDataResult("No organization security settings available")
-	}
-
-	var findings []Issue
-
-	if !settings.DependabotAlertsForNewRepos {
-		e.addFinding(&findings, "org-def-001", "")
-	}
-	if !settings.DependabotSecurityUpdatesForNewRepos {
-		e.addFinding(&findings, "org-def-002", "")
-	}
-	if !settings.DependencyGraphForNewRepos {
-		e.addFinding(&findings, "org-def-003", "")
-	}
-	if !settings.SecretScanningForNewRepos {
-		e.addFinding(&findings, "org-def-004", "")
-	}
-	if !settings.SecretScanningPushProtectionForNewRepos {
-		e.addFinding(&findings, "org-def-005", "")
-	}
-	if !settings.AdvancedSecurityForNewRepos {
-		e.addFinding(&findings, "org-def-006", "")
-	}
-	if !settings.PrivateVulnerabilityReportingForNewRepos {
-		e.addFinding(&findings, "org-def-007", "")
-	}
-
-	return createResult(e, findings)
-}
-
 func summarizeSuspiciousEvents(events []*scanners.SuspiciousAuditEvent) string {
 	seen := map[string]int{}
 	for _, e := range events {

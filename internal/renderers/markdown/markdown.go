@@ -73,6 +73,7 @@ func buildScanReport(results map[string]interface{}) *renderers.ScanReport {
 		{"evaluation:actions_permissions:", "actions_permissions_evaluation", report.Organizations},
 		{"evaluation:org_security_alerts:", "org_security_alerts_evaluation", report.Organizations},
 		{"evaluation:security_managers:", "security_managers_evaluation", report.Organizations},
+		{"evaluation:org_security_defaults:", "org_security_defaults_evaluation", report.Organizations},
 		{"evaluation:enterprise_security_alerts:", "enterprise_security_alerts_evaluation", report.Enterprises},
 		{"evaluation:enterprise_budgets:", "enterprise_budgets_evaluation", report.Enterprises},
 		{"evaluation:metadata:", "metadata_evaluation", report.Repositories},
