@@ -26,7 +26,7 @@ For GHES instances, run `gh auth login --hostname <ghes-host>` or set `GH_TOKEN`
 | `read:user` | Read user information |
 | `copilot` | Read Copilot seat and policy information |
 
-> **Note:** Organization code security configurations (`settings.security.code_security_configurations` in the JSON output) are read with `read:org`, but GitHub also requires the token user to be an **organization owner or security manager**. Otherwise ghqr records them as not readable (`*_readable: false` with a `*_unavailable_reason` of `forbidden`, `not_found`, or `error`) instead of failing the scan. These configurations replace the deprecated `*_enabled_for_new_repos` organization fields, which can report `false` for organizations that set defaults through a default code security configuration.
+> **Note:** Organization code security configurations (`settings.security.code_security_configurations` in the JSON output) are read with `read:org`, but GitHub also requires the token user to be an **organization owner or security manager**. Otherwise ghqr records them as not readable (`*_readable: false` with a `*_unavailable_reason` of `forbidden`, `not_found`, or `error`) instead of failing the scan. These configurations replace the deprecated `*_enabled_for_new_repos` organization fields, which GitHub ignores and can report `false` for organizations that set defaults through a default code security configuration. When the defaults are readable, the `org-def-*` findings (reported as `org_security_defaults_evaluation`) are evaluated against the default configuration for public and for private/internal new repositories; when they are not readable, ghqr falls back to the legacy fields and says so in the finding.
 
 ### Required Token Scopes for GHES
 

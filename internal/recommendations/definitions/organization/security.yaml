@@ -69,8 +69,8 @@
   title: Dependabot alerts not enabled by default for new repositories
   category: dependencies
   severity: high
-  description: Dependabot alerts are not automatically enabled for new repositories created in this organization. New repositories will not receive vulnerability notifications until manually configured.
-  recommendation: Enable 'Dependabot alerts' in Organization → Settings → Code security and analysis to apply this protection automatically to all new repositories.
+  description: Dependabot alerts are not automatically enabled for new repositories created in this organization. New repositories will not receive vulnerability notifications until manually configured. ghqr checks the default code security configuration for public and for private/internal new repositories when it is readable, and the deprecated organization setting otherwise; the finding states which scope is not covered.
+  recommendation: Enable 'Dependabot alerts' in a code security configuration (for example 'GitHub recommended') and set it as the default for new public, private and internal repositories in Organization → Settings → Advanced Security (formerly Code security) → Configurations.
   learnMore: https://docs.github.com/en/code-security/dependabot/dependabot-alerts/configuring-dependabot-alerts
   tags: [dependabot, security, defaults]
   enabled: true
@@ -80,8 +80,8 @@
   title: Dependabot security updates not enabled by default for new repositories
   category: dependencies
   severity: medium
-  description: Dependabot security updates are not automatically enabled for new repositories. Without this, Dependabot will alert on vulnerabilities but will not automatically open pull requests to fix them.
-  recommendation: Enable 'Dependabot security updates' in Organization → Settings → Code security and analysis.
+  description: Dependabot security updates are not automatically enabled for new repositories. Without this, Dependabot will alert on vulnerabilities but will not automatically open pull requests to fix them. ghqr checks the default code security configuration for public and for private/internal new repositories when it is readable, and the deprecated organization setting otherwise.
+  recommendation: Enable 'Dependabot security updates' in the code security configuration set as the default for new public, private and internal repositories (Organization → Settings → Advanced Security (formerly Code security) → Configurations).
   learnMore: https://docs.github.com/en/code-security/dependabot/dependabot-security-updates/configuring-dependabot-security-updates
   tags: [dependabot, security, defaults]
   enabled: true
@@ -91,8 +91,8 @@
   title: Dependency graph not enabled by default for new repositories
   category: dependencies
   severity: medium
-  description: The dependency graph is not automatically enabled for new repositories. The dependency graph is required for Dependabot alerts and dependency review to function.
-  recommendation: Enable the dependency graph in Organization → Settings → Code security and analysis.
+  description: The dependency graph is not automatically enabled for new repositories. The dependency graph is required for Dependabot alerts and dependency review to function. ghqr checks the default code security configuration for public and for private/internal new repositories when it is readable, and the deprecated organization setting otherwise.
+  recommendation: Enable the dependency graph in the code security configuration set as the default for new public, private and internal repositories (Organization → Settings → Advanced Security (formerly Code security) → Configurations).
   learnMore: https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/about-the-dependency-graph
   tags: [dependabot, security, defaults]
   enabled: true
@@ -102,8 +102,8 @@
   title: Secret scanning not enabled by default for new repositories
   category: security
   severity: high
-  description: Secret scanning is not automatically enabled for new repositories, leaving newly created repositories without protection against accidentally committed secrets.
-  recommendation: Enable 'Secret scanning' in Organization → Settings → Code security and analysis to protect all new repositories from the moment they are created.
+  description: Secret scanning is not automatically enabled for new repositories, leaving newly created repositories without protection against accidentally committed secrets. ghqr checks the default code security configuration for public and for private/internal new repositories when it is readable, and the deprecated organization setting otherwise; the finding states which scope is not covered.
+  recommendation: Enable 'Secret scanning' in a code security configuration (for example 'GitHub recommended') and set it as the default for new public, private and internal repositories in Organization → Settings → Advanced Security (formerly Code security) → Configurations, so every new repository is protected from the moment it is created.
   learnMore: https://docs.github.com/en/code-security/secret-scanning/about-secret-scanning
   tags: [secret_scanning, security, defaults]
   enabled: true
@@ -113,8 +113,8 @@
   title: Secret scanning push protection not enabled by default for new repositories
   category: security
   severity: high
-  description: Push protection for secret scanning is not automatically enabled for new repositories, meaning secrets can be committed before they are detected.
-  recommendation: Enable 'Push protection' in Organization → Settings → Code security and analysis to block commits containing secrets before they reach the repository.
+  description: Push protection for secret scanning is not automatically enabled for new repositories, meaning secrets can be committed before they are detected. ghqr checks the default code security configuration for public and for private/internal new repositories when it is readable, and the deprecated organization setting otherwise.
+  recommendation: Enable 'Push protection' in the code security configuration set as the default for new public, private and internal repositories (Organization → Settings → Advanced Security (formerly Code security) → Configurations) to block commits containing secrets before they reach the repository.
   learnMore: https://docs.github.com/en/code-security/secret-scanning/introduction/about-push-protection
   tags: [secret_scanning, security, defaults]
   enabled: true
@@ -124,8 +124,8 @@
   title: GitHub Advanced Security not enabled by default for new repositories
   category: security
   severity: medium
-  description: GitHub Advanced Security (GHAS) is not automatically enabled for new repositories. GHAS is required for code scanning, advanced secret scanning, and dependency review.
-  recommendation: Enable 'GitHub Advanced Security' in Organization → Settings → Code security and analysis (requires a GHAS license).
+  description: GitHub Advanced Security (GHAS) is not automatically enabled for new repositories. GHAS, now offered as GitHub Code Security and GitHub Secret Protection, is required for code scanning, advanced secret scanning, and dependency review. When the default code security configuration is readable, ghqr requires both products to be enabled for public and for private/internal new repositories and states which product or scope is missing; otherwise it uses the deprecated organization setting.
+  recommendation: Enable GitHub Code Security and GitHub Secret Protection in the code security configuration set as the default for new public, private and internal repositories (Organization → Settings → Advanced Security (formerly Code security) → Configurations). Requires the corresponding licenses.
   learnMore: https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
   tags: [ghas, security, defaults]
   enabled: true
@@ -135,8 +135,8 @@
   title: Private vulnerability reporting not enabled by default for new repositories
   category: security
   severity: medium
-  description: Private vulnerability reporting is not automatically enabled for new repositories. Without this, security researchers have no private channel to report vulnerabilities, increasing the risk of public disclosure before a fix is ready.
-  recommendation: Enable 'Private vulnerability reporting' in Organization → Settings → Code security and analysis to allow security researchers to privately report vulnerabilities for all new repositories.
+  description: Private vulnerability reporting is not automatically enabled for new repositories. Without this, security researchers have no private channel to report vulnerabilities, increasing the risk of public disclosure before a fix is ready. The feature only applies to public repositories, so when the default code security configuration is readable ghqr checks the default for public new repositories; otherwise it uses the organization setting.
+  recommendation: Enable 'Private vulnerability reporting' in the code security configuration set as the default for new public repositories (Organization → Settings → Advanced Security (formerly Code security) → Configurations) to allow security researchers to privately report vulnerabilities.
   learnMore: https://docs.github.com/en/code-security/security-advisories/working-with-repository-security-advisories/configuring-private-vulnerability-reporting-for-a-repository
   tags: [security, vulnerability_reporting, defaults]
   enabled: true

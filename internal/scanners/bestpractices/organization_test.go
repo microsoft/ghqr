@@ -6,7 +6,6 @@ package bestpractices_test
 import (
 	"testing"
 
-	"github.com/google/go-github/v83/github"
 	"github.com/microsoft/ghqr/internal/recommendations"
 	"github.com/microsoft/ghqr/internal/scanners"
 	"github.com/microsoft/ghqr/internal/scanners/bestpractices"
@@ -107,43 +106,5 @@ func TestEvaluateOrganizationSecurity_2FA_Required(t *testing.T) {
 	}
 	if findRuleID(result, "org-sec-006") != nil {
 		t.Error("unexpected org-sec-006 finding when 2FA is required")
-	}
-}
-
-// Code security configurations are collected for reporting only; they must not
-// change org-def-* scoring, which still reflects the legacy organization fields.
-func TestEvaluateOrgSecurityDefaults_IgnoresCodeSecurityConfigurations(t *testing.T) {
-	eval := newEvaluator(t)
-
-	tests := []struct {
-		name string
-		csc  *scanners.OrgCodeSecurityConfigurations
-	}{
-		{name: "not collected", csc: nil},
-		{name: "default configuration for all new repos", csc: &scanners.OrgCodeSecurityConfigurations{
-			DefaultsReadable: true,
-			DefaultConfigurations: []*github.CodeSecurityConfigurationWithDefaultForNewRepos{{
-				DefaultForNewRepos: github.Ptr("all"),
-				Configuration:      &github.CodeSecurityConfiguration{Name: "GitHub recommended"},
-			}},
-		}},
-		{name: "not readable", csc: &scanners.OrgCodeSecurityConfigurations{
-			DefaultsUnavailableReason: scanners.CodeSecurityConfigUnavailableForbidden,
-		}},
-	}
-
-	baseline := eval.EvaluateOrgSecurityDefaults(&scanners.OrgSecurity{})
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := eval.EvaluateOrgSecurityDefaults(&scanners.OrgSecurity{CodeSecurityConfigurations: tt.csc})
-			if got.Summary.TotalIssues != baseline.Summary.TotalIssues {
-				t.Fatalf("TotalIssues = %d, want %d", got.Summary.TotalIssues, baseline.Summary.TotalIssues)
-			}
-			for i := range baseline.Recommendations {
-				if got.Recommendations[i].RuleID != baseline.Recommendations[i].RuleID {
-					t.Errorf("rule[%d] = %s, want %s", i, got.Recommendations[i].RuleID, baseline.Recommendations[i].RuleID)
-				}
-			}
-		})
 	}
 }
