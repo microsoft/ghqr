@@ -9,6 +9,10 @@ updates:
     directory: /
     schedule:
       interval: daily
+    groups:
+      codeql-actions:
+        patterns:
+          - "github/codeql-action/*"
 
   - package-ecosystem: gomod
     directory: /
