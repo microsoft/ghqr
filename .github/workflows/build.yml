@@ -208,8 +208,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    outputs:
-      release_id: ${{ steps.create_release.outputs.id }}
     steps:
       - name: Detect preview version
         id: detect_preview
@@ -221,26 +219,11 @@ jobs:
             echo "is_prerelease=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create ghqr Release
-        id: create_release
-        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          tag_name: ${{ github.ref }}
-          name: ${{ needs.calculate-version.outputs.version }}
-          body: ""
-          draft: false
-          prerelease: ${{ steps.detect_preview.outputs.is_prerelease }}
+          fetch-depth: 0
 
-  publish:
-    name: Publish binaries
-    needs: [release]
-    permissions:
-      contents: write
-    if: github.event_name != 'pull_request' && startswith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    steps:
       - name: Download all artifacts
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -304,10 +287,28 @@ jobs:
           sha256sum ghqr-linux-amd64.zip > ghqr-linux-amd64.zip.sha256
           sha256sum ghqr-linux-arm64.zip > ghqr-linux-arm64.zip.sha256
 
-      - name: Publish
-        uses: skx/github-action-publish-binaries@44887b225ceca96efd8a912d39c09ad70312af31 # master
+      - name: Create ghqr Release
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          args: ghqr.zip ghqr-win-amd64.zip ghqr-win-arm64.zip ghqr-darwin-amd64.zip ghqr-darwin-arm64.zip ghqr-linux-amd64.zip ghqr-linux-arm64.zip ghqr.zip.sha256 ghqr-win-amd64.zip.sha256 ghqr-win-arm64.zip.sha256 ghqr-darwin-amd64.zip.sha256 ghqr-darwin-arm64.zip.sha256 ghqr-linux-amd64.zip.sha256 ghqr-linux-arm64.zip.sha256
-          releaseId: ${{ needs.release.outputs.release_id }}
+          tag_name: ${{ github.ref }}
+          name: ${{ needs.calculate-version.outputs.version }}
+          body: ""
+          draft: false
+          prerelease: ${{ steps.detect_preview.outputs.is_prerelease }}
+          files: |
+            ghqr.zip
+            ghqr-win-amd64.zip
+            ghqr-win-arm64.zip
+            ghqr-darwin-amd64.zip
+            ghqr-darwin-arm64.zip
+            ghqr-linux-amd64.zip
+            ghqr-linux-arm64.zip
+            ghqr.zip.sha256
+            ghqr-win-amd64.zip.sha256
+            ghqr-win-arm64.zip.sha256
+            ghqr-darwin-amd64.zip.sha256
+            ghqr-darwin-arm64.zip.sha256
+            ghqr-linux-amd64.zip.sha256
+            ghqr-linux-arm64.zip.sha256
