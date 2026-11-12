@@ -1,0 +1,13 @@
+# Local report data and exports.
+*.json
+*.csv
+*.pdf
+*.zip
+*.bak
+*.log
+/*.html
+!/ghqr-dashboard.html
+
+# Python cache files.
+__pycache__/
+*.py[cod]

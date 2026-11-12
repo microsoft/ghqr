@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en-AU" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<meta name="robots" content="noindex, nofollow">
+<title>GitHub estate health</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23a78bfa'/%3E%3Cstop offset='1' stop-color='%2322d3ee'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Cpath d='M16 6.5l7.5 3v5.3c0 4.7-3.2 7.9-7.5 9-4.3-1.1-7.5-4.3-7.5-9V9.5z' fill='none' stroke='white' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M12.3 16.2l2.6 2.6 4.8-5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>/*__GHQR_CSS__*/</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand-row">
+      <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8l8 3.2v5.6c0 5-3.4 8.4-8 9.6-4.6-1.2-8-4.6-8-9.6V6l8-3.2z"/><path d="M7.5 13.2l2.6-2.6 2.4 2.4 4-4.2"/></svg></div>
+      <div class="brand">
+        <div class="eyebrow">GitHub Enterprise · Estate health review</div>
+        <h1><span id="hdr-title">GitHub estate health</span><span class="hchips" id="hdr-chips"></span></h1>
+        <div class="hdr-meta" id="hdr-meta"></div>
+      </div>
+      <div class="hdr-actions">
+        <label class="btn" id="btn-load" title="Load a GHQR JSON report"><span>Load report</span><input type="file" id="file-input" accept=".json,application/json" hidden></label>
+        <button class="btn" id="btn-unload" type="button" title="Unload the report and return to the upload screen" hidden></button>
+        <button class="btn" id="btn-theme" type="button" title="Switch theme"></button>
+        <button class="btn" id="btn-present" type="button" title="Presentation mode (P)" hidden></button>
+        <button class="btn btn-primary" id="btn-export" type="button" title="Save the whole dashboard, with every finding, as a PDF" hidden></button>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Dashboard sections" hidden></nav>
+  </div>
+</header>
+<main id="app"><p class="boot-note">Loading the dashboard… If it doesn’t appear, save this file and open it in a current version of Microsoft Edge, Google Chrome, Firefox or Safari. Email and file previews can’t display it.</p></main>
+<footer class="foot">
+  <span>Built from a GHQR report · runs entirely in this browser — no data leaves the machine</span>
+  <span><kbd>←</kbd> <kbd>→</kbd> sections · <kbd>1</kbd>–<kbd>8</kbd> jump · <kbd>P</kbd> present · <kbd>Ctrl</kbd>+<kbd>P</kbd> PDF · <kbd>Esc</kbd> close</span>
+</footer>
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true" aria-label="Details">
+  <button class="drawer-close" id="drawer-close" type="button" aria-label="Close details"></button>
+  <div class="drawer-body" id="drawer-body"></div>
+</aside>
+<div class="tooltip" id="tooltip" role="tooltip"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="dropzone" id="dropzone">Drop the GHQR JSON report to load it</div>
+<div class="present-counter" id="present-counter"></div>
+<div class="print-foot" id="print-foot" aria-hidden="true"></div>
+<script id="ghqr-data" type="application/json">null</script>
+<script>/*__GHQR_JS__*/</script>
+</body>
+</html>
